@@ -1,0 +1,102 @@
+v0.8 (Apr-14-2017)
+ -massive code overhaul for significant performance improvement
+ -custom solved states for user-defined methods (see readme)
+ -added direct hexadecimal cubestate prescription
+ -added democratically-elected icon
+ -many bugs likely introduced
+ 
+ 
+v0.7b (???-??-2017)
+ -top secret version only for elite cubers
+ 
+ 
+v0.7a (Jan-25-2017)
+ -fixed everything I didn't notice I broke in v0.7
+
+ 
+v0.7 (Jan-22-2017)
+ -custom methods support custom movegroups ("movegroup <RUL>")
+ -support for ALL possible moves (Singmaster Notation) and rotations
+ -custom methods support solving to AUF ("Udisplacement")
+ -custom methods support custom algorithm sets ("algset CMLL.txt")
+ -custom methods support solving CP ("2genreduction")
+ -fixed bugs in cancellations and cubestate reversions
+ -include substep names in output for clarity
+ 
+ 
+v0.6 (Jan-17-2017)
+ -added support for custom user-defined methods (up to 8 steps)
+ -see the custom_methods_readme.txt for details
+
+
+v0.5 (Jan-04-2017)
+ -fixed bug in cancellations
+ -wide U moves added (u/u2/u')
+ -removed move penalty for rotations
+ -added Simon Swanson's full ZBLL alg-set for ZZ/Petrus
+ -"all" command to fully solve the cube in a single orientation (for zz, this does lb->rb)
+ -you can now apply sequences in this order:
+ 	Petrus:	2x2x2->3x2x2->eo->f2l->zbll
+				   3x2x2->eo->f2l->zbll
+	CFOP:   cross->xcross (first pair at FR)
+		           xcross
+	Roux:	fs->fb->sb->cmll->lse
+			    fb->sb->cmll->lse
+	ZZ:	eoline->   lb  ->rb->zbll
+		eoline->   rb  ->lb->zbll
+		        eo3x2x2->rb->zbll
+				
+
+v0.4 (Dec-23-2016)
+ -fixed bug with movecounts printing in base16 (LOL)
+ -"view" command to display solution on alg.cubing.net
+ -ability to apply moves between blocks (your own algs, etc.)
+ -additional hex value to describe centers
+ -wide L moves added (l/l2/l')
+ -added optimal Roux CMLL and LSE. You can edit the algs in CMLL.txt.
+ 	Roux:	fs->fb->sb->cmll->lse
+			    fb->sb->cmll->lse
+ 
+ 
+v0.3 (Dec-21-2016)
+ -added video
+ -fixed bug with [RUFB] movegroup
+ -all optimal solutions now generable (at small RAM expense)
+ -trivial congruent solutions removed (we match cubeexplorer)
+ -you can now apply sequences in this order:
+	Petrus:	2x2x2->3x2x2->eo->f2l
+				   3x2x2->eo->f2l
+	CFOP:   cross->xcross (first pair at FR)
+		           xcross
+	Roux:	fs->fb->sb
+			    fb->sb
+	ZZ:	eoline->   lb  ->rb
+		eoline->   rb  ->lb
+		        eo3x2x2->rb
+
+
+v0.2 (Dec-16-2016)
+ -fixed bug with z' rotations
+ -made roux fb [U,D,R,L,F,B,M,r] optimal & ignore centers
+ -adjusted prune depth for steps, based on upper bounds, faster
+ -way to apply solutions (typing number next to it) and continue
+ -keeps track of applied move sequences (print command)
+ -save applied sequences to text file (don't need to copy manually)
+ -added second steps, see below
+ -you can now apply sequences in this order:
+	Petrus:	2x2x2->3x2x2->eo->f2l
+		           3x2x2->eo->f2l
+	CFOP:   cross->xcross (first pair at FR)
+		       xcross
+	Roux:	fs->fb->sb
+		        fb->sb
+	ZZ:	eoline->   lb  ->rb
+		        eo3x2x2->rb
+
+		
+v0.1 (Dec-14-2016)
+ -basic color neutral first steps including:
+   -cfop: cross, xcross
+   -petrus: 2x2x2, 3x2x2
+   -roux: fb+centers
+   -zz: eoline, eo3x2x2

@@ -85,6 +85,12 @@ Other supported commands include:
 
 2genreduction		: This reduces the cube corners to states solvable with <RU> moves.
 					: Simply include this along with the other commands for a step.
+					
+eps					: Set a custom "solved" edge permutation in hex format (default: 0x123456789abc)
+eos					: Set a custom "solved" edge orientation in hex format (default: 0x222222222222)
+cps					: Set a custom "solved" corner permutation in hex format (default: 0x12345678)
+cos					: Set a custom "solved" corner orientation in hex format (default: 0x44444444)
+cns					: Set a custom "solved" center permutation in hex format (default: 0x123)
 
 ------------------------------------------------------------------------------------------
 

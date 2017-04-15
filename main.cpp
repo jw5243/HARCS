@@ -7,10 +7,18 @@
 #include "headers.h"
 #include <shlobj.h>
 
+
+#include <chrono>
+#include <algorithm>
+
+
 using namespace std;
+
+typedef std::chrono::high_resolution_clock Clock;
 
 string cubeRevert(bool);
 void applyMove(string themove);
+void applyMove2(char amove);
 void showCube(void);
 void prunes1(int depth, int, int, int);
 void solves1(int depth, int, int, int, vector <string>, vector <string>, int);
@@ -26,12 +34,16 @@ bool isScramble2=0;
 bool isSolver2=0;
 bool isCheck=0;
 bool isDepth=0;
+bool isSet=0;
+int isSet2=0;
 int number=3;
 int oldnumber=0;
 int tempnumber;
 bool setOutput=1;
+bool asetstate=0;
 bool prunedyet=0;
 int prunedmethod=99;
+__int64 EPo, EOo, CPo, COo, CNo;
 bool dosomething(int, int, string, bool);
 vector < string > orientations= {"UF"};
 vector < string > rotations{" "};
@@ -40,7 +52,18 @@ string usedrotation;
 string usedorientation;
 void customparser(void);
 bool executecommand(string comma, int nom, vector < string > oris, vector < string > rots);
+void cubeSet(vector < __int64 > setter);
+vector < __int64 > setter(5);
+string moveReverse(string a);
+vector < char > move2vec (string movesstring);
+string vec2move ( vector < char >  movevec);
+void solves12(int depth, int method, int step, int nom, vector < string > oris, vector < string > rots, int allowedmoves);
 
+
+void testlayers();
+void addLayers2(vector < char > curset, vector < vector < char > > &thisone, int allowedmoves);
+void prunes12 (int depth, int method, int step, int allowedmoves);
+void testmaps();
 
 void introWCA()
 {
@@ -90,6 +113,7 @@ void showHelpWCA()
     cout <<"\n   info\t\tdisplay version information\n"
          "   cls\t\tclear the screen\n"
          "   apply * #\tapply a scramble/moves to current cube, ending with #\n\t\t   (ex: apply R U2 B' L ... #)\n"
+         "   set * * * * * # set a scrambled state via hex input; order EP EO CP CO CN\n"
          "   revert\trevert cube to solved state\n"
          "   number *\tset desired count of substep solutions (default: 3)\n"
          "   state\tshow current hexadecimal cubestate representation\n"
@@ -123,8 +147,7 @@ int getInputWCA()
             if (buf=="test")
             {
                 firstWordWCA=1;
-                cout<<countWords("M' U D M D' M2 D' M' U' D M'");
-                //algparser(1);
+                cout<<"\n   Bill Clinton is a rapist! INFOWARS.COM\n\n";
             }
 
             if (buf=="custom")
@@ -143,10 +166,7 @@ int getInputWCA()
                         cout<<"\n   Clearing old tables.\n";
                     }
 
-
                     customparser();
-
-
                     prunedyet=1;
                     prunedmethod=4;
                 }
@@ -154,6 +174,7 @@ int getInputWCA()
 
             if (buf=="petrus")
             {
+                auto t1 = Clock::now();
                 firstWordWCA=1;
                 if (prunedmethod==1)
                 {
@@ -167,24 +188,30 @@ int getInputWCA()
                         unpruner();
                         cout<<"\n   Clearing old tables.\n";
                     }
-                    cout<<"\n   Loading 2x2x2,";
-                    prunes1(4,1,0,1);
+                    cout<<"\n   Loaded 2x2x2,";
+                    prunes12(4,1,0,1);
                     cout<<" 3x2x2,";
-                    prunes1(5,1,1,1);
+                    prunes12(5,1,1,1);
                     cout<<" eo,";
-                    prunes1(4,1,2,6);
+                    prunes12(4,1,2,6);
                     cout<<" f2l,";
-                    prunes1(6,1,3,4);
+                    prunes12(6,1,3,4);
                     cout<<" zbll,";
-                    prunes1(1,1,4,8);
-                    cout<<" Ready.\n\n";
+                    prunes12(1,1,4,8);
+                    auto t2 = Clock::now();
+                    cout<<" in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
                     prunedyet=1;
                     prunedmethod=1;
                 }
+                auto t2 = Clock::now();
+                std::cout <<"\n\n   petrusOLD pruned in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
+
             }
+
 
             if (buf=="cfop")
             {
+                auto t1 = Clock::now();
                 firstWordWCA=1;
                 if (prunedmethod==0)
                 {
@@ -197,11 +224,14 @@ int getInputWCA()
                         unpruner();
                         cout<<"\n   Clearing old tables.\n";
                     }
-                    cout<<"\n   Loading cross,";
-                    prunes1(4,0,0,1);
+                    cout<<"\n   Loaded cross,";
+                    prunes12(4,0,0,1);
                     cout<<" xcross,";
-                    prunes1(5,0,1,1);
-                    cout<<" Ready.\n\n";
+                    prunes12(5,0,1,1);
+                    //cout<<" pairs,";
+                    //prunes12(0,0,2,666);
+                    auto t2 = Clock::now();
+                    cout<<" in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
                     prunedyet=1;
                     prunedmethod=0;
                 }
@@ -209,6 +239,7 @@ int getInputWCA()
 
             if (buf=="zz")
             {
+                auto t1 = Clock::now();
                 firstWordWCA=1;
                 if (prunedmethod==3)
                 {
@@ -221,23 +252,27 @@ int getInputWCA()
                         unpruner();
                         cout<<"\n   Clearing old tables.\n";
                     }
-                    cout<<"\n   Loading eoline,";
-                    prunes1(4,3,0,1);
+                    cout<<"\n   Loaded eoline,";
+                    prunes12(4,3,0,1);
                     cout<<" eo3x2x2,";
-                    prunes1(5,3,1,1);
+                    prunes12(5,3,1,1);
                     cout<<" lb,";
-                    prunes1(6,3,2,5);
+                    prunes12(6,3,2,5);
                     cout<<" rb,";
-                    prunes1(6,3,3,5);
+                    prunes12(6,3,3,5);
                     cout<<" zbll,";
-                    prunes1(1,3,4,8);
-                    cout<<" Ready.\n\n";
+                    prunes12(1,3,4,8);
+                    auto t2 = Clock::now();
+                    cout<<" in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
                     prunedyet=1;
                     prunedmethod=3;
                 }
+
             }
+
             if (buf=="roux")
             {
+                auto t1 = Clock::now();
                 firstWordWCA=1;
                 if (prunedmethod==2)
                 {
@@ -250,17 +285,18 @@ int getInputWCA()
                         unpruner();
                         cout<<"\n   Clearing old tables.\n";
                     }
-                    cout<<"\n   Loading fs,";
-                    prunes1(4,2,3,2);
+                    cout<<"\n   Loaded fs,";
+                    prunes12(4,2,3,2);
                     cout<<" fb,";
-                    prunes1(4,2,0,2);
+                    prunes12(4,2,0,2);
                     cout<<" sb,";
-                    prunes1(6,2,1,3);
+                    prunes12(6,2,1,3);
                     cout<<" cmll,";
-                    prunes1(1,2,4,8);
+                    prunes12(1,2,4,8);
                     cout<<" lse,";
-                    prunes1(8,2,5,7);
-                    cout<<" Ready.\n\n";
+                    prunes12(8,2,5,7);
+                    auto t2 = Clock::now();
+                    cout<<" in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
                     prunedyet=1;
                     prunedmethod=2;
                 }
@@ -280,48 +316,51 @@ int getInputWCA()
                 firstWordWCA=1;
                 if (prunedmethod!=1&&prunedmethod!=2&&prunedmethod!=3)
                 {
-                    cout<<"\n   must be pruned for petrus/roux/zz\n\n";
+                    cout<<"\n   must be pruned for petrus/roux/zz/custom\n\n";
                 }
                 else if (orientations.size()==1)
                 {
-
+                    auto t1 = Clock::now();
                     if (prunedmethod==1) // petrus
                     {
-                    solves1(6,1,1,number,orientations,rotations,1);
+                    solves12(6,1,1,number,orientations,rotations,1);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(5,1,2,number,orientations,rotations,6);
+                    solves12(5,1,2,number,orientations,rotations,6);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(6,1,3,number,orientations,rotations,4);
+                    solves12(6,1,3,number,orientations,rotations,4);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(1,1,4,number,orientations,rotations,8);
+                    solves12(1,1,4,number,orientations,rotations,8);
                     firstdo=dosomething(0,1," ",firstdo);
-                    cout<<"\n   complete petrus solution applied\n\n";
+                    auto t2 = Clock::now();
+                    cout<<"\n   stepwise-optimal petrus solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
                     }
 
                     if (prunedmethod==2) // roux
                     {
-                    solves1(5,2,0,number,orientations,rotations,2);
+                    solves12(5,2,0,number,orientations,rotations,2);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(6,2,1,number,orientations,rotations,3);
+                    solves12(6,2,1,number,orientations,rotations,3);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(1,2,4,number,orientations,rotations,8);
+                    solves12(1,2,4,number,orientations,rotations,8);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(8,2,5,number,orientations,rotations,7);
+                    solves12(8,2,5,number,orientations,rotations,7);
                     firstdo=dosomething(0,1," ",firstdo);
-                    cout<<"\n   complete roux solution applied\n\n";
+                    auto t2 = Clock::now();
+                    cout<<"\n   stepwise-optimal roux solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
                     }
 
                     if (prunedmethod==3) // zz
                     {
-                    solves1(5,3,0,number,orientations,rotations,1);
+                    solves12(5,3,0,number,orientations,rotations,1);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(6,3,2,number,orientations,rotations,5);
+                    solves12(6,3,2,number,orientations,rotations,5);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(6,3,3,number,orientations,rotations,5);
+                    solves12(6,3,3,number,orientations,rotations,5);
                     firstdo=dosomething(0,1," ",firstdo);
-                    solves1(1,1,4,number,orientations,rotations,8);
+                    solves12(1,1,4,number,orientations,rotations,8);
                     firstdo=dosomething(0,1," ",firstdo);
-                    cout<<"\n   complete zz solution applied\n\n";
+                    auto t2 = Clock::now();
+                    cout<<"\n   stepwise-optimal zz solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
                     }
 
                 }
@@ -343,7 +382,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,3,0,number,orientations,rotations,1);
+                    solves12(5,3,0,number,orientations,rotations,1);
                 }
             }
 
@@ -356,7 +395,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,3,1,number,orientations,rotations,1);
+                    solves12(6,3,1,number,orientations,rotations,1);
                 }
             }
 
@@ -369,7 +408,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,3,2,number,orientations,rotations,5);
+                    solves12(6,3,2,number,orientations,rotations,5);
                 }
             }
 
@@ -382,7 +421,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,3,3,number,orientations,rotations,5);
+                    solves12(6,3,3,number,orientations,rotations,5);
                 }
             }
 
@@ -395,7 +434,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(1,1,4,number,orientations,rotations,8);
+                    solves12(1,1,4,number,orientations,rotations,8);
                 }
             }
 
@@ -408,7 +447,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(4,2,3,number,orientations,rotations,2);
+                    solves12(4,2,3,number,orientations,rotations,2);
                 }
             }
 
@@ -422,7 +461,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,2,0,number,orientations,rotations,2);
+                    solves12(5,2,0,number,orientations,rotations,2);
                 }
             }
 
@@ -435,7 +474,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,2,1,number,orientations,rotations,3);
+                    solves12(6,2,1,number,orientations,rotations,3);
                 }
             }
 
@@ -449,7 +488,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(1,2,4,number,orientations,rotations,8);
+                    solves12(1,2,4,number,orientations,rotations,8);
                 }
             }
 
@@ -463,7 +502,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(8,2,5,number,orientations,rotations,7);
+                    solves12(8,2,5,number,orientations,rotations,7);
                 }
             }
 
@@ -477,7 +516,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,0,0,number,orientations,rotations,1);
+                    solves12(5,0,0,number,orientations,rotations,1);
                 }
             }
 
@@ -490,7 +529,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,0,1,number,orientations,rotations,1);
+                    solves12(5,0,1,number,orientations,rotations,1);
                 }
             }
 
@@ -503,7 +542,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,1,0,number,orientations,rotations,1);
+                    solves12(5,1,0,number,orientations,rotations,1);
                 }
             }
 
@@ -516,7 +555,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,1,1,number,orientations,rotations,1);
+                    solves12(6,1,1,number,orientations,rotations,1);
                 }
             }
 
@@ -529,7 +568,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(5,1,2,number,orientations,rotations,6);
+                    solves12(5,1,2,number,orientations,rotations,6);
                 }
             }
 
@@ -542,7 +581,7 @@ int getInputWCA()
                 }
                 else
                 {
-                    solves1(6,1,3,number,orientations,rotations,4);
+                    solves12(6,1,3,number,orientations,rotations,4);
                 }
             }
 
@@ -565,7 +604,7 @@ int getInputWCA()
             else if (buf=="info")
             {
                 firstWordWCA=1;
-                cout << "\n   HARCS v0.7a : 01-25-2017 : Matt DiPalma : USA\n\n";
+                cout << "\n   HARCS v0.8 : 04-14-2017 : Matt DiPalma : USA\n\n";
             }
             else if (buf=="number")
             {
@@ -578,6 +617,7 @@ int getInputWCA()
                 scramble=cubeRevert(1);
                 usedrotation.clear();
                 firstdo=1;
+                asetstate=0;
                 cout << "\n   Reset to solved.\n\n";
             }
             else if (buf=="state")
@@ -592,8 +632,12 @@ int getInputWCA()
                 {
                     for (int j=0; j<wherretf.size(); j++)
                     {
+                        if (asetstate && j==0)
+                        {
+                            cout<<std::hex<<"\n   init state:\n   EP: 0x"<<EPo<<"\n   EO: 0x"<<EOo<<"\n   CP: 0x"<<CPo<<"\n   CO: 0x"<<COo<<"\n   CN: 0x"<<CNo<<"\n";
+                        }
                         cout <<std::dec<< "\n   "<<wherretf[j][0]<<" // "<<wherretf[j][1];
-                        if (j>1)
+                        if (j>1 || (j>0 && asetstate))
                         {cout<<" ("<<countWords(wherretf[j][0])<<")";}
                         cout<<endl;
                     }
@@ -615,8 +659,12 @@ int getInputWCA()
                     //outfile<<endl;
                     for (int j=0; j<wherretf.size(); j++)
                     {
+                        if (asetstate && j==0)
+                        {
+                            outfile<<std::hex<<"\ninit state: 0x"<<EPo<<" 0x"<<EOo<<" 0x"<<CPo<<" 0x"<<COo<<" 0x"<<CNo<<std::dec;
+                        }
                         outfile << "\n"<<wherretf[j][0]<<" // "<<wherretf[j][1];
-                        if (j>1)
+                        if (j>1 || (j>0 && asetstate))
                         {outfile<<" ("<<countWords(wherretf[j][0])<<")";}
                        // outfile<<endl;
                     }
@@ -638,6 +686,8 @@ int getInputWCA()
                 {
                 string url="https://alg.cubing.net?";
                 string useit;
+                if (!asetstate)
+                {
                     for (int j=0; j<wherretf.size(); j++)
                     {
                         useit=replaceStrChar(wherretf[j][0], "'", '-');
@@ -655,6 +705,37 @@ int getInputWCA()
                             url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
                         }
                      }
+                }
+                else if (asetstate)
+                {
+                    for (int j=0; j<wherretf.size(); j++)
+                    {
+                        if (j==0)
+                        {
+                            useit="";
+                            for (int k=0;k<wherretf.size();k++)
+                            {
+                                useit+=(wherretf[k][0]+" ");
+                            }
+                            useit=moveReverse(useit);
+                            useit=replaceStrChar(useit, "'", '-');
+                            useit=replaceStrChar(useit, " ", '_');
+                            url+=("setup="+useit);
+                            useit=replaceStrChar(wherretf[j][0], "'", '-');
+                            useit=replaceStrChar(useit, " ", '_');
+                            url+=("&alg="+useit+"_%2F%2F_"+wherretf[j][1]);
+                        }
+                        else if (j>0)
+                        {
+                            useit=replaceStrChar(wherretf[j][0], "'", '-');
+                            useit=replaceStrChar(useit, " ", '_');
+                            url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
+                        }
+                     }
+                }
+
+
+
                     cout<<"\n   opening alg.cubing.net in default browser\n\n";
                     ShellExecute(NULL, "open", url.c_str(), NULL, NULL , SW_SHOWNORMAL );
 
@@ -664,9 +745,6 @@ int getInputWCA()
                 {
                     cout<<"\n   no sequences applied yet\n\n";
                 }
-
-
-             // https://alg.cubing.net?setup=R-_U-_L_D_F2&alg=y_%2F%2F_inspectionR_U_B_L2_M_%2F%2F_fb
             }
 
 
@@ -918,7 +996,11 @@ int getInputWCA()
 
             }
 
-
+            else if (buf=="set")
+            {
+                isSet=1;
+                cout << "\n   state set\n\n";
+            }
 
             else if (buf=="apply")
             {
@@ -940,6 +1022,34 @@ int getInputWCA()
                     isDepth=0;
                 }
 
+            }
+
+            else if (isSet==1)
+            {
+            if (buf=="#")
+            {
+                if (isSet)
+                {
+                    isSet=0;
+                    isSet2=0;
+                    cubeSet(setter);
+                    scramble="";
+                    asetstate=1;
+                    EPo=setter[0];
+                    EOo=setter[1];
+                    CPo=setter[2];
+                    COo=setter[3];
+                    CNo=setter[4];
+                   }
+            }
+            else
+            {
+                istringstream buffer(buf);
+                __int64 value;
+                buffer >> std::hex >> value;
+                setter[isSet2]=value;
+                isSet2++;
+            }
             }
 
             else if (isScramble2==1)
