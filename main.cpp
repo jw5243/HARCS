@@ -7,9 +7,11 @@
 #include "headers.h"
 #include <shlobj.h>
 
+#include "rlutil.h"
 
 #include <chrono>
 #include <algorithm>
+
 
 
 using namespace std;
@@ -17,11 +19,8 @@ using namespace std;
 typedef std::chrono::high_resolution_clock Clock;
 
 string cubeRevert(bool);
-void applyMove(string themove);
 void applyMove2(char amove);
 void showCube(void);
-void prunes1(int depth, int, int, int);
-void solves1(int depth, int, int, int, vector <string>, vector <string>, int);
 void unpruner(void);
 string remove_last_word_if(string sentence);
 //void algparser(int);
@@ -34,6 +33,7 @@ bool isScramble2=0;
 bool isSolver2=0;
 bool isCheck=0;
 bool isDepth=0;
+bool isAnalyze=0;
 bool isSet=0;
 int isSet2=0;
 int number=3;
@@ -58,12 +58,10 @@ string moveReverse(string a);
 vector < char > move2vec (string movesstring);
 string vec2move ( vector < char >  movevec);
 void solves12(int depth, int method, int step, int nom, vector < string > oris, vector < string > rots, int allowedmoves);
+void analyze(int quantity, int prunedmethod, vector < string > orientations, vector < string > rotations);
 
-
-void testlayers();
-void addLayers2(vector < char > curset, vector < vector < char > > &thisone, int allowedmoves);
 void prunes12 (int depth, int method, int step, int allowedmoves);
-void testmaps();
+
 
 void introWCA()
 {
@@ -91,17 +89,18 @@ string ToString(size_t val)
     return stream.str();
 }
 
-string replaceStrChar(string str, const string& replace, char ch) {
+string replaceStrChar(string str, const string& replace, char ch)
+{
 
-size_t found = str.find_first_of(replace);
+    size_t found = str.find_first_of(replace);
 
-  while (found != string::npos)
+    while (found != string::npos)
     {
-    str[found] = ch;
-    found = str.find_first_of(replace, found+1);
-  }
+        str[found] = ch;
+        found = str.find_first_of(replace, found+1);
+    }
 
-  return str; // return our new string.
+    return str; // return our new string.
 }
 
 void putCursor()
@@ -111,7 +110,6 @@ void putCursor()
 void showHelpWCA()
 {
     cout <<"\n   info\t\tdisplay version information\n"
-         "   cls\t\tclear the screen\n"
          "   apply * #\tapply a scramble/moves to current cube, ending with #\n\t\t   (ex: apply R U2 B' L ... #)\n"
          "   set * * * * * # set a scrambled state via hex input; order EP EO CP CO CN\n"
          "   revert\trevert cube to solved state\n"
@@ -127,29 +125,43 @@ void showHelpWCA()
          "   zz\t\tprunes for eoline (D), eo3x2x2 (DL), lb, rb, and zbll\n"
          "   custom\tprunes for the method defined in custom.txt\n"
          "   all\t\tsolves entire cube with set method in single orientation\n"
-         "\n   To solve a substep for a pruned method, type the step, as written above."
-         "\n   To apply a generated substep solution, type the number next to it.\n\n"
+         "   analyze *\tanalyzes desired number of solves with set method\n\n"
+         "   To solve a substep for a pruned method, type the step, as written above.\n"
+         "   To apply a generated substep solution, type the number next to it.\n\n"
          ;
 
 }
-int getInputWCA()
+int getInputWCA(bool CLI, string commands)
 {
 
     while (1)
     {
-        firstWordWCA=0;
-        cout<<"HARCS>> ";
-        getline(cin, inputWCA);
+        if (CLI)
+        {
+            inputWCA=commands;
+        }
+        else
+        {
+            firstWordWCA=0;
+            cout<<"HARCS>> ";
+            getline(cin, inputWCA);
+        }
         string buf;
         stringstream ss(inputWCA);
         while (ss >> buf)
-        {  bool notrecognized=1;
+        {
+            rlutil::setColor(rlutil::YELLOW);
+            bool notrecognized=1;
             if (buf=="test")
             {
+                std::cout<<"\n   Blessed are they which are persecuted\n   for righteousness' sake, for theirs\n   is the kingdom of heaven.\t(Mt 5:10)\n\n";
                 firstWordWCA=1;
-                cout<<"\n   Bill Clinton is a rapist! INFOWARS.COM\n\n";
             }
-
+            if (buf=="gullible")
+            {
+                std::cout<<"\n   3.141592653\n\n";
+                firstWordWCA=1;
+            }
             if (buf=="custom")
             {
                 firstWordWCA=1;
@@ -195,7 +207,7 @@ int getInputWCA()
                     cout<<" eo,";
                     prunes12(4,1,2,6);
                     cout<<" f2l,";
-                    prunes12(6,1,3,4);
+                    prunes12(7,1,3,4);
                     cout<<" zbll,";
                     prunes12(1,1,4,8);
                     auto t2 = Clock::now();
@@ -203,8 +215,6 @@ int getInputWCA()
                     prunedyet=1;
                     prunedmethod=1;
                 }
-                auto t2 = Clock::now();
-                std::cout <<"\n\n   petrusOLD pruned in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
 
             }
 
@@ -259,7 +269,7 @@ int getInputWCA()
                     cout<<" lb,";
                     prunes12(6,3,2,5);
                     cout<<" rb,";
-                    prunes12(6,3,3,5);
+                    prunes12(7,3,3,4);
                     cout<<" zbll,";
                     prunes12(1,3,4,8);
                     auto t2 = Clock::now();
@@ -294,7 +304,7 @@ int getInputWCA()
                     cout<<" cmll,";
                     prunes12(1,2,4,8);
                     cout<<" lse,";
-                    prunes12(8,2,5,7);
+                    prunes12(10,2,5,7);
                     auto t2 = Clock::now();
                     cout<<" in "<< std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n"<<std::endl;
                     prunedyet=1;
@@ -302,290 +312,290 @@ int getInputWCA()
                 }
             }
 
-        if (prunedmethod==4)
+            if (prunedmethod==4)
             {
                 notrecognized=executecommand(buf,number,orientations,rotations);
             }
 
-        else
+            else
             {
-            if (buf=="all")
-            {
-                oldnumber=number;
-                number=1;
-                firstWordWCA=1;
-                if (prunedmethod!=1&&prunedmethod!=2&&prunedmethod!=3)
+                if (buf=="all")
                 {
-                    cout<<"\n   must be pruned for petrus/roux/zz/custom\n\n";
-                }
-                else if (orientations.size()==1)
-                {
-                    auto t1 = Clock::now();
-                    if (prunedmethod==1) // petrus
+                    oldnumber=number;
+                    number=1;
+                    firstWordWCA=1;
+                    if (prunedmethod!=1&&prunedmethod!=2&&prunedmethod!=3)
                     {
-                    solves12(6,1,1,number,orientations,rotations,1);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(5,1,2,number,orientations,rotations,6);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(6,1,3,number,orientations,rotations,4);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(1,1,4,number,orientations,rotations,8);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    auto t2 = Clock::now();
-                    cout<<"\n   stepwise-optimal petrus solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
+                        cout<<"\n   must be pruned for petrus/roux/zz/custom\n\n";
                     }
-
-                    if (prunedmethod==2) // roux
+                    else if (orientations.size()==1)
                     {
-                    solves12(5,2,0,number,orientations,rotations,2);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(6,2,1,number,orientations,rotations,3);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(1,2,4,number,orientations,rotations,8);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(8,2,5,number,orientations,rotations,7);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    auto t2 = Clock::now();
-                    cout<<"\n   stepwise-optimal roux solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
-                    }
+                        auto t1 = Clock::now();
+                        if (prunedmethod==1) // petrus
+                        {
+                            solves12(6,1,1,number,orientations,rotations,1);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(5,1,2,number,orientations,rotations,6);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(7,1,3,number,orientations,rotations,4);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(1,1,4,number,orientations,rotations,8);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            auto t2 = Clock::now();
+                            cout<<"\n   stepwise-optimal petrus solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
+                        }
 
-                    if (prunedmethod==3) // zz
+                        if (prunedmethod==2) // roux
+                        {
+                            solves12(5,2,0,number,orientations,rotations,2);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(6,2,1,number,orientations,rotations,3);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(1,2,4,number,orientations,rotations,8);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(10,2,5,number,orientations,rotations,7);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            auto t2 = Clock::now();
+                            cout<<"\n   stepwise-optimal roux solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
+                        }
+
+                        if (prunedmethod==3) // zz
+                        {
+                            solves12(5,3,0,number,orientations,rotations,1);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(6,3,2,number,orientations,rotations,5);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(7,3,3,number,orientations,rotations,4);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            solves12(1,3,4,number,orientations,rotations,8);
+                            firstdo=dosomething(0,1," ",firstdo);
+                            auto t2 = Clock::now();
+                            cout<<"\n   stepwise-optimal zz solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
+                        }
+
+                    }
+                    else
                     {
-                    solves12(5,3,0,number,orientations,rotations,1);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(6,3,2,number,orientations,rotations,5);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(6,3,3,number,orientations,rotations,5);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    solves12(1,1,4,number,orientations,rotations,8);
-                    firstdo=dosomething(0,1," ",firstdo);
-                    auto t2 = Clock::now();
-                    cout<<"\n   stepwise-optimal zz solution applied in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms \n\n";
+                        cout<<"\n   specify a single orientation\n\n";
                     }
+                    number=oldnumber;
+                }
 
-                }
-                else
+
+
+                if (buf=="eoline")
                 {
-                    cout<<"\n   specify a single orientation\n\n";
+                    firstWordWCA=1;
+                    if (prunedmethod!=3)
+                    {
+                        cout<<"\n   zz is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,3,0,number,orientations,rotations,1);
+                    }
                 }
-                number=oldnumber;
+
+                if (buf=="eo3x2x2")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=3)
+                    {
+                        cout<<"\n   zz is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(6,3,1,number,orientations,rotations,1);
+                    }
+                }
+
+                if (buf=="lb")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=3)
+                    {
+                        cout<<"\n   zz is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(6,3,2,number,orientations,rotations,5);
+                    }
+                }
+
+                if (buf=="rb")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=3)
+                    {
+                        cout<<"\n   zz is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(7,3,3,number,orientations,rotations,4);
+                    }
+                }
+
+                if (buf=="zbll")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=3 && prunedmethod!=1)
+                    {
+                        cout<<"\n   neither zz nor petrus is currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(1,1,4,number,orientations,rotations,8);
+                    }
+                }
+
+                if (buf=="fs")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=2)
+                    {
+                        cout<<"\n   roux is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(4,2,3,number,orientations,rotations,2);
+                    }
+                }
+
+
+                if (buf=="fb")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=2)
+                    {
+                        cout<<"\n   roux is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,2,0,number,orientations,rotations,2);
+                    }
+                }
+
+                if (buf=="sb")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=2)
+                    {
+                        cout<<"\n   roux is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(6,2,1,number,orientations,rotations,3);
+                    }
+                }
+
+
+                if (buf=="cmll")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=2)
+                    {
+                        cout<<"\n   roux is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(1,2,4,number,orientations,rotations,8);
+                    }
+                }
+
+
+                if (buf=="lse")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=2)
+                    {
+                        cout<<"\n   roux is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(10,2,5,number,orientations,rotations,7);
+                    }
+                }
+
+
+                if (buf=="cross")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=0)
+                    {
+                        cout<<"\n   cfop is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,0,0,number,orientations,rotations,1);
+                    }
+                }
+
+                if (buf=="xcross")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=0)
+                    {
+                        cout<<"\n   cfop is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,0,1,number,orientations,rotations,1);
+                    }
+                }
+
+                if (buf=="2x2x2")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=1)
+                    {
+                        cout<<"\n   petrus is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,1,0,number,orientations,rotations,1);
+                    }
+                }
+
+                if (buf=="3x2x2")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=1)
+                    {
+                        cout<<"\n   petrus is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(6,1,1,number,orientations,rotations,1);
+                    }
+                }
+
+                if (buf=="eo")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=1)
+                    {
+                        cout<<"\n   petrus is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(5,1,2,number,orientations,rotations,6);
+                    }
+                }
+
+                if (buf=="f2l")
+                {
+                    firstWordWCA=1;
+                    if (prunedmethod!=1)
+                    {
+                        cout<<"\n   petrus is not currently loaded.\n\n";
+                    }
+                    else
+                    {
+                        solves12(7,1,3,number,orientations,rotations,4);
+                    }
+                }
+
             }
-
-
-
-            if (buf=="eoline")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=3)
-                {
-                    cout<<"\n   zz is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,3,0,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="eo3x2x2")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=3)
-                {
-                    cout<<"\n   zz is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,3,1,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="lb")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=3)
-                {
-                    cout<<"\n   zz is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,3,2,number,orientations,rotations,5);
-                }
-            }
-
-             if (buf=="rb")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=3)
-                {
-                    cout<<"\n   zz is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,3,3,number,orientations,rotations,5);
-                }
-            }
-
-             if (buf=="zbll")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=3 && prunedmethod!=1)
-                {
-                    cout<<"\n   neither zz nor petrus is currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(1,1,4,number,orientations,rotations,8);
-                }
-            }
-
-            if (buf=="fs")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=2)
-                {
-                    cout<<"\n   roux is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(4,2,3,number,orientations,rotations,2);
-                }
-            }
-
-
-            if (buf=="fb")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=2)
-                {
-                    cout<<"\n   roux is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,2,0,number,orientations,rotations,2);
-                }
-            }
-
-           if (buf=="sb")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=2)
-                {
-                    cout<<"\n   roux is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,2,1,number,orientations,rotations,3);
-                }
-            }
-
-
-           if (buf=="cmll")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=2)
-                {
-                    cout<<"\n   roux is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(1,2,4,number,orientations,rotations,8);
-                }
-            }
-
-
-            if (buf=="lse")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=2)
-                {
-                    cout<<"\n   roux is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(8,2,5,number,orientations,rotations,7);
-                }
-            }
-
-
-            if (buf=="cross")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=0)
-                {
-                    cout<<"\n   cfop is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,0,0,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="xcross")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=0)
-                {
-                    cout<<"\n   cfop is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,0,1,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="2x2x2")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=1)
-                {
-                    cout<<"\n   petrus is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,1,0,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="3x2x2")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=1)
-                {
-                    cout<<"\n   petrus is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,1,1,number,orientations,rotations,1);
-                }
-            }
-
-            if (buf=="eo")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=1)
-                {
-                    cout<<"\n   petrus is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(5,1,2,number,orientations,rotations,6);
-                }
-            }
-
-            if (buf=="f2l")
-            {
-                firstWordWCA=1;
-                if (prunedmethod!=1)
-                {
-                    cout<<"\n   petrus is not currently loaded.\n\n";
-                }
-                else
-                {
-                    solves12(6,1,3,number,orientations,rotations,4);
-                }
-            }
-
-        }
             if (buf=="illuminati")
             {
                 firstWordWCA=1;
@@ -604,12 +614,17 @@ int getInputWCA()
             else if (buf=="info")
             {
                 firstWordWCA=1;
-                cout << "\n   HARCS v0.8 : 04-14-2017 : Matt DiPalma : USA\n\n";
+                cout << "\n   HARCS v0.9 : 05-28-2017 : Matt DiPalma : USA\n\n";
             }
             else if (buf=="number")
             {
                 firstWordWCA=1;
                 isDepth=1;
+            }
+            else if (buf=="analyze")
+            {
+                firstWordWCA=1;
+                isAnalyze=1;
             }
             else if (buf=="revert")
             {
@@ -638,7 +653,9 @@ int getInputWCA()
                         }
                         cout <<std::dec<< "\n   "<<wherretf[j][0]<<" // "<<wherretf[j][1];
                         if (j>1 || (j>0 && asetstate))
-                        {cout<<" ("<<countWords(wherretf[j][0])<<")";}
+                        {
+                            cout<<" ("<<countWords(wherretf[j][0])<<")";
+                        }
                         cout<<endl;
                     }
                     cout<<endl;
@@ -665,8 +682,10 @@ int getInputWCA()
                         }
                         outfile << "\n"<<wherretf[j][0]<<" // "<<wherretf[j][1];
                         if (j>1 || (j>0 && asetstate))
-                        {outfile<<" ("<<countWords(wherretf[j][0])<<")";}
-                       // outfile<<endl;
+                        {
+                            outfile<<" ("<<countWords(wherretf[j][0])<<")";
+                        }
+                        // outfile<<endl;
                     }
                     outfile<<"\n---"<<endl;
                     cout<<"\n   sequences saved to solutions.txt\n\n";
@@ -684,60 +703,60 @@ int getInputWCA()
                 firstWordWCA=1;
                 if (!wherretf.empty())
                 {
-                string url="https://alg.cubing.net?";
-                string useit;
-                if (!asetstate)
-                {
-                    for (int j=0; j<wherretf.size(); j++)
+                    string url="https://alg.cubing.net?";
+                    string useit;
+                    if (!asetstate)
                     {
-                        useit=replaceStrChar(wherretf[j][0], "'", '-');
-                        useit=replaceStrChar(useit, " ", '_');
-                        if (j==0)
+                        for (int j=0; j<wherretf.size(); j++)
                         {
-                            url+=("setup="+useit);
-                        }
-                        else if (j==1)
-                        {
-                            url+=("&alg="+useit+"_%2F%2F_"+wherretf[j][1]);
-                        }
-                        else if (j>1)
-                        {
-                            url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
-                        }
-                     }
-                }
-                else if (asetstate)
-                {
-                    for (int j=0; j<wherretf.size(); j++)
-                    {
-                        if (j==0)
-                        {
-                            useit="";
-                            for (int k=0;k<wherretf.size();k++)
+                            useit=replaceStrChar(wherretf[j][0], "'", '-');
+                            useit=replaceStrChar(useit, " ", '_');
+                            if (j==0)
                             {
-                                useit+=(wherretf[k][0]+" ");
+                                url+=("setup="+useit);
                             }
-                            useit=moveReverse(useit);
-                            useit=replaceStrChar(useit, "'", '-');
-                            useit=replaceStrChar(useit, " ", '_');
-                            url+=("setup="+useit);
-                            useit=replaceStrChar(wherretf[j][0], "'", '-');
-                            useit=replaceStrChar(useit, " ", '_');
-                            url+=("&alg="+useit+"_%2F%2F_"+wherretf[j][1]);
+                            else if (j==1)
+                            {
+                                url+=("&alg="+useit+"_%2F%2F_"+wherretf[j][1]);
+                            }
+                            else if (j>1)
+                            {
+                                url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
+                            }
                         }
-                        else if (j>0)
+                    }
+                    else if (asetstate)
+                    {
+                        for (int j=0; j<wherretf.size(); j++)
                         {
-                            useit=replaceStrChar(wherretf[j][0], "'", '-');
-                            useit=replaceStrChar(useit, " ", '_');
-                            url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
+                            if (j==0)
+                            {
+                                useit="";
+                                for (int k=0; k<wherretf.size(); k++)
+                                {
+                                    useit+=(wherretf[k][0]+" ");
+                                }
+                                useit=moveReverse(useit);
+                                useit=replaceStrChar(useit, "'", '-');
+                                useit=replaceStrChar(useit, " ", '_');
+                                url+=("setup="+useit);
+                                useit=replaceStrChar(wherretf[j][0], "'", '-');
+                                useit=replaceStrChar(useit, " ", '_');
+                                url+=("&alg="+useit+"_%2F%2F_"+wherretf[j][1]);
+                            }
+                            else if (j>0)
+                            {
+                                useit=replaceStrChar(wherretf[j][0], "'", '-');
+                                useit=replaceStrChar(useit, " ", '_');
+                                url+=("%0A"+useit+"_%2F%2F_"+wherretf[j][1]+"_("+ToString(countWords(wherretf[j][0]))+")");
+                            }
                         }
-                     }
-                }
+                    }
 
 
 
                     cout<<"\n   opening alg.cubing.net in default browser\n\n";
-                    ShellExecute(NULL, "open", url.c_str(), NULL, NULL , SW_SHOWNORMAL );
+                    ShellExecute(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL );
 
                 }
 
@@ -1023,9 +1042,29 @@ int getInputWCA()
                 }
 
             }
-
-            else if (isSet==1)
+            else if (isAnalyze==1)
             {
+                istringstream convert(buf);
+                if ( (convert >> tempnumber) )
+                {
+                    if (orientations.size()>1)
+                    {
+                        cout<<"\n   specify a single orientation\n\n";
+                    }
+                    else
+                    {
+                        analyze(tempnumber, prunedmethod, orientations, rotations);
+                    }
+                    isAnalyze=0;
+                }
+                else
+                {
+                    cout << "\n   invalid quantity for analysis\n\n";
+                    isAnalyze=0;
+                }
+            }
+        else if (isSet==1)
+        {
             if (buf=="#")
             {
                 if (isSet)
@@ -1040,7 +1079,7 @@ int getInputWCA()
                     CPo=setter[2];
                     COo=setter[3];
                     CNo=setter[4];
-                   }
+                }
             }
             else
             {
@@ -1050,10 +1089,10 @@ int getInputWCA()
                 setter[isSet2]=value;
                 isSet2++;
             }
-            }
+        }
 
-            else if (isScramble2==1)
-            {
+        else if (isScramble2==1)
+        {
             if (buf=="#")
             {
                 if (isScramble2)
@@ -1061,59 +1100,85 @@ int getInputWCA()
                     isScramble2=0;
                     dosomething(1,0,scramble,firstdo);
                     scramble="";
-                   }
+                }
 
             }
             else
             {
-                applyMove(buf);
+                //applyMove(buf);
+                vector < char > tempmove=move2vec(buf);
+                for (int i=0; i<tempmove.size(); i++)
+                {
+                    applyMove2(tempmove[i]);
+                }
                 scramble.append(buf);
                 scramble.append(" ");
             }
-            }
-             else if (buf=="#")
-            {
+        }
+        else if (buf=="#")
+        {
 
-                if (isCheck)
+            if (isCheck)
+            {
+                cout<<"\n   orientations set to: ";
+                isCheck=0;
+                for (int i=0; i<orientations.size(); i++)
                 {
-                    cout<<"\n   orientations set to: ";
-                    isCheck=0;
-                    for (int i=0; i<orientations.size(); i++)
-                    {
-                        cout<<orientations[i]<<" ";
-                    }
-                    cout<<"\n\n";
+                    cout<<orientations[i]<<" ";
                 }
-            }
-            else if (firstWordWCA==1)
-            {
-                firstWordWCA=0;
-            }
-
-            else if (is_number(buf))
-            {
-                firstdo=dosomething(0,atoi(buf.c_str())," ",firstdo);
-            }
-
-            else
-            {
-                if (notrecognized)
-                {
-                cout << "\n   command not recognized\n\n";
-                break;
-                }
+                cout<<"\n\n";
             }
         }
+        else if (firstWordWCA==1)
+        {
+            firstWordWCA=0;
+        }
+
+        else if (is_number(buf))
+        {
+            firstdo=dosomething(0,atoi(buf.c_str())," ",firstdo);
+        }
+
+        else
+        {
+            if (notrecognized)
+            {
+                cout << "\n   command not recognized\n\n";
+                rlutil::setColor(rlutil::WHITE);
+                break;
+            }
+        }
+    rlutil::setColor(rlutil::WHITE);
     }
-    return 0;
+    if (CLI)
+    {
+        break;
+    }
+}
+return 0;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    introWCA();
-    while (1)
+    srand(time(NULL));
+    if (argc > 1)
     {
-        getInputWCA();
+        string asmb="";
+        for (int j=1; j<argc; j++)
+        {
+            asmb=asmb+argv[j]+" ";
+        }
+        getInputWCA(1,asmb);
+    }
+    else
+    {
+        rlutil::setColor(rlutil::LIGHTRED);
+        introWCA();
+        rlutil::setColor(rlutil::WHITE);
+        while (1)
+        {
+            getInputWCA(0,"");
+        }
     }
     return 0;
 }

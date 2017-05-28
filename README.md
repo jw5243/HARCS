@@ -2,12 +2,12 @@
 
 console-based Rubik's cube solver for human methods
 
-Most recent compiled and zipped executables can be downloaded at:
-
-http://rpi.edu/~dipalm/HARCS-08.zip
+http://rpi.edu/~dipalm/HARCS-09.zip
 
 Previous versions may still be available at:
 
+http://rpi.edu/~dipalm/HARCS-08a.zip
+http://rpi.edu/~dipalm/HARCS-08.zip
 http://rpi.edu/~dipalm/HARCS-07a.zip
 http://rpi.edu/~dipalm/HARCS-06.zip
 http://rpi.edu/~dipalm/HARCS-05.zip
@@ -16,4 +16,4 @@ http://rpi.edu/~dipalm/HARCS-03.zip
 http://rpi.edu/~dipalm/HARCS-02.zip
 http://rpi.edu/~dipalm/HARCS-01.zip
 
-Matt DiPalma APR-15-2017
+Matt DiPalma MAY-28-2017

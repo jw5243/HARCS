@@ -23,8 +23,8 @@ cnmask 0xfff
 
 step cp
 movegroup 4
-prunedepth 7
-searchdepth 7
+prunedepth 8
+searchdepth 8
 epmask 0x0000ffff0000
 eomask 0xffffffffffff
 cpmask 0xffffffff

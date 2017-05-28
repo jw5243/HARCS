@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sstream>
 #include <chrono>
+#include <ctype.h>
 #include <iterator>
 #include <fstream>
 #include <boost/tuple/tuple.hpp>
@@ -14,7 +15,7 @@
 #include <regex>
 #include "headers.h"
 #include <boost/algorithm/string.hpp>
-
+#include <numeric>
 
 using namespace std;
 
@@ -70,18 +71,20 @@ bool veil=0;
 bool noprune=0;
 int foundsolutions=0;
 void EOfixer(void);
-void CNfixer(void);
-void prunes1(int, int, int);
 void cleanScrambler(void);
 void masks1(int, int);
 string moveReverse(string);
-void applyMove(string themove);
+void applyMove2(char);
 typedef std::chrono::high_resolution_clock Clock;
+vector <string> scramblesave;
+int squares=0;
+int nostep=0;
+int nosteps=0;
 
 string vec2move ( vector < char >  movevec)
 {
     string outmoves="";
-    for (int i=0;i<movevec.size();i++)
+    for (int i=0; i<movevec.size(); i++)
     {
         if (movevec[i]==0) outmoves+="U ";
         else if (movevec[i]==1) outmoves+="U2 ";
@@ -281,7 +284,7 @@ void algparser(vector < char > str, vector < vector < char > > &thisone, int whi
                 }
             }
             vector < char > tempmoves=move2vec(moveReverse(part1));
-            for (int k=0; k<str.size();k++) tempmoves.insert(tempmoves.begin(),str[k]);
+            for (int k=0; k<str.size(); k++) tempmoves.insert(tempmoves.begin(),str[k]);
             thisone.push_back(tempmoves);
         }
         infile.close();
@@ -310,7 +313,7 @@ void algparser(vector < char > str, vector < vector < char > > &thisone, int whi
                 }
             }
             vector < char > tempmoves=move2vec(moveReverse(part1));
-            for (int k=0; k<str.size();k++) tempmoves.insert(tempmoves.begin(),str[k]);
+            for (int k=0; k<str.size(); k++) tempmoves.insert(tempmoves.begin(),str[k]);
             thisone.push_back(tempmoves);
         }
         infile.close();
@@ -340,7 +343,7 @@ void algparser(vector < char > str, vector < vector < char > > &thisone, int whi
                 }
             }
             vector < char > tempmoves=move2vec(moveReverse(part1));
-            for (int k=0; k<str.size();k++) tempmoves.insert(tempmoves.begin(),str[k]);
+            for (int k=0; k<str.size(); k++) tempmoves.insert(tempmoves.begin(),str[k]);
             thisone.push_back(tempmoves);
         }
         infile.close();
@@ -426,11 +429,10 @@ bool dosomething(int isscramble, int whatthing, string scr, bool firstdo)
                 CP=CPi;
                 CO=COi;
                 CN=CNi;
-                string tuf;
-                stringstream ss(trim(solutionsLog[whatthing-1]));
-                while (ss >> tuf)
+                vector <char> tempmoves=move2vec(trim(solutionsLog[whatthing-1]));
+                for (int ij=0; ij<tempmoves.size(); ij++)
                 {
-                    applyMove(tuf);
+                    applyMove2(tempmoves[ij]);
                 }
                 EPi=EP;
                 EOi=EO;
@@ -549,6 +551,7 @@ void showCube()
              "   CO: 0x" << COi << "\n"
              "   CN: 0x" << CNi << "\n\n";
     }
+    std::dec;
     return;
 }
 
@@ -2110,2086 +2113,6 @@ void applyMove2(char themove)
     return;
 }
 
-void applyMove(string themove)
-{
-    if (themove == "U")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0xfff000000000)>>4)|((EP&0x000f00000000)<<12);
-        EO=(EO&0x0000ffffffff)|((EO&0xfff000000000)>>4)|((EO&0x000f00000000)<<12);
-        CP=(CP&0x0000ffff)|((CP&0xfff00000)>>4)|((CP&0x000f0000)<<12);
-        CO=(CO&0x0000ffff)|((CO&0xfff00000)>>4)|((CO&0x000f0000)<<12);
-    }
-    if (themove == "U2")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0xff0000000000)>>8)|((EP&0x00ff00000000)<<8);
-        EO=(EO&0x0000ffffffff)|((EO&0xff0000000000)>>8)|((EO&0x00ff00000000)<<8);
-        CP=(CP&0x0000ffff)|((CP&0xff000000)>>8)|((CP&0x00ff0000)<<8);
-        CO=(CO&0x0000ffff)|((CO&0xff000000)>>8)|((CO&0x00ff0000)<<8);
-
-    }
-    if (themove == "U'")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0x0fff00000000)<<4)|((EP&0xf00000000000)>>12);
-        EO=(EO&0x0000ffffffff)|((EO&0x0fff00000000)<<4)|((EO&0xf00000000000)>>12);
-        CP=(CP&0x0000ffff)|((CP&0x0fff0000)<<4)|((CP&0xf0000000)>>12);
-        CO=(CO&0x0000ffff)|((CO&0x0fff0000)<<4)|((CO&0xf0000000)>>12);
-
-    }
-    if (themove == "D")
-    {
-        EP=(EP&0xffffffff0000)|((EP&0x000000000fff)<<4)|((EP&0x00000000f000)>>12);
-        EO=(EO&0xffffffff0000)|((EO&0x000000000fff)<<4)|((EO&0x00000000f000)>>12);
-        CP=(CP&0xffff0000)|((CP&0x00000fff)<<4)|((CP&0x0000f000)>>12);
-        CO=(CO&0xffff0000)|((CO&0x00000fff)<<4)|((CO&0x0000f000)>>12);
-
-    }
-    if (themove == "D2")
-    {
-        EP=(EP&0xffffffff0000)|((EP&0x0000000000ff)<<8)|((EP&0x00000000ff00)>>8);
-        EO=(EO&0xffffffff0000)|((EO&0x0000000000ff)<<8)|((EO&0x00000000ff00)>>8);
-        CP=(CP&0xffff0000)|((CP&0x000000ff)<<8)|((CP&0x0000ff00)>>8);
-        CO=(CO&0xffff0000)|((CO&0x000000ff)<<8)|((CO&0x0000ff00)>>8);
-
-    }
-    if (themove == "D'")
-    {
-        EP=(EP&0xffffffff0000)|((EP&0x00000000fff0)>>4)|((EP&0x00000000000f)<<12);
-        EO=(EO&0xffffffff0000)|((EO&0x00000000fff0)>>4)|((EO&0x00000000000f)<<12);
-        CP=(CP&0xffff0000)|((CP&0x0000fff0)>>4)|((CP&0x0000000f)<<12);
-        CO=(CO&0xffff0000)|((CO&0x0000fff0)>>4)|((CO&0x0000000f)<<12);
-
-    }
-    if (themove == "R")
-    {
-
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f000f000000)>>16)|((EP&0x000000f00000)<<20)|((EP&0x000000000f00)<<12);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f000f000000)>>16)|((EO&0x000000f00000)<<20)|((EO&0x000000000f00)<<12);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>16)|((CP&0x00f00000)<<4)|((CP&0x00000f00)>>4)|((CP&0x000000f0)<<16);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>16)|((CO&0x00f00000)<<4)|((CO&0x00000f00)>>4)|((CO&0x000000f0)<<16);
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            //if (o==24)
-            //  {
-            // cout<<std::hex<<CO<<endl<<(0xf<<o)<<endl<<(CO&(0xf<<o))<<endl<<((CO&(0xf<<o))>>(o+2))<<endl<<(!((CO&(0xf<<o))>>(o+2)))<<endl;
-            //     }
-
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        // temp=CO2;
-        // CO2=CO3+1;
-        // CO3=CO7+2;
-        // CO7=CO6+1;
-        // CO6=temp+2;
-    }
-    if (themove == "R2")
-    {
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>32)|((EP&0x000000f00000)<<4)|((EP&0x00000f000000)>>4)|((EP&0x000000000f00)<<32);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>32)|((EO&0x000000f00000)<<4)|((EO&0x00000f000000)>>4)|((EO&0x000000000f00)<<32);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>20)|((CP&0x00f00000)>>12)|((CP&0x00000f00)<<12)|((CP&0x000000f0)<<20);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>20)|((CO&0x00f00000)>>12)|((CO&0x00000f00)<<12)|((CO&0x000000f0)<<20);
-        // temp=CO6;
-        // CO6=CO3;
-        // CO3=temp;
-        // temp=CO7;
-        //CO7=CO2;
-        // CO2=temp;
-    }
-    if (themove == "R'")
-    {
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>20)|((EP&0x000000f00000)>>12)|((EP&0x00000f000000)<<16)|((EP&0x000000000f00)<<16);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>20)|((EO&0x000000f00000)>>12)|((EO&0x00000f000000)<<16)|((EO&0x000000000f00)<<16);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>4)|((CP&0x00f00000)>>16)|((CP&0x00000f00)<<16)|((CP&0x000000f0)<<4);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>4)|((CO&0x00f00000)>>16)|((CO&0x00000f00)<<16)|((CO&0x000000f0)<<4);
-
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        //  temp=CO2;
-        // CO2=CO6+1;
-        // CO6=CO7+2;
-        // CO7=CO3+1;
-        // CO3=temp+2;
-    }
-    if (themove == "L")
-    {
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f000f0000)>>16)|((EP&0x0000f0000000)<<4)|((EP&0x00000000000f)<<28);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f000f0000)>>16)|((EO&0x0000f0000000)<<4)|((EO&0x00000000000f)<<28);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>12)|((CP&0x000f0000)>>16)|((CP&0x0000f000)<<16)|((CP&0x0000000f)<<12);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>12)|((CO&0x000f0000)>>16)|((CO&0x0000f000)<<16)|((CO&0x0000000f)<<12);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //  temp=CO1;
-        //  CO1=CO5+2;
-        //  CO5=CO8+1;
-        //  CO8=CO4+2;
-        // CO4=temp+1;
-    }
-    if (themove == "L2")
-    {
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f00000000)>>32)|((EP&0x0000f0000000)>>12)|((EP&0x00000000000f)<<32)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f00000000)>>32)|((EO&0x0000f0000000)>>12)|((EO&0x00000000000f)<<32)|((EO&0x0000000f0000)<<12);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>28)|((CP&0x000f0000)>>4)|((CP&0x0000f000)<<4)|((CP&0x0000000f)<<28);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>28)|((CO&0x000f0000)>>4)|((CO&0x0000f000)<<4)|((CO&0x0000000f)<<28);
-
-        //  temp=CO1;
-        //  CO1=CO8;
-        //  CO8=temp;
-        //  temp=CO4;
-        //  CO4=CO5;
-        //  CO5=temp;
-    }
-    if (themove == "L'")
-    {
-        EP=(EP&0xfff00ff0fff0)|((EP&0x0000000f000f)<<16)|((EP&0x0000f0000000)>>28)|((EP&0x000f00000000)>>4);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x0000000f000f)<<16)|((EO&0x0000f0000000)>>28)|((EO&0x000f00000000)>>4);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>16)|((CP&0x000f0000)<<12)|((CP&0x0000f000)>>12)|((CP&0x0000000f)<<16);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>16)|((CO&0x000f0000)<<12)|((CO&0x0000f000)>>12)|((CO&0x0000000f)<<16);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //  temp=CO1;
-        //  CO1=CO4+2;
-        //  CO4=CO8+1;
-        //  CO8=CO5+2;
-        //  CO5=temp+1;
-    }
-    if (themove == "F")
-    {
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000f00000)>>16)|((EP&0x0000000f0000)<<20)|((EP&0x0000000000f0)<<12);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000f00000)>>16)|((EO&0x0000000f0000)<<20)|((EO&0x0000000000f0)<<12);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>16)|((CP&0x000f0000)<<4)|((CP&0x000000f0)>>4)|((CP&0x0000000f)<<16);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>16)|((CO&0x000f0000)<<4)|((CO&0x000000f0)>>4)|((CO&0x0000000f)<<16);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-
-        //  temp=CO3;
-        //  CO3=CO4+1;
-        //  CO4=CO8+2;
-        //  CO8=CO7+1;
-        //  CO7=temp+2;
-
-    }
-    if (themove == "F2")
-    {
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>32)|((EP&0x0000000f0000)<<4)|((EP&0x0000000000f0)<<32)|((EP&0x000000f00000)>>4);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>32)|((EO&0x0000000f0000)<<4)|((EO&0x0000000000f0)<<32)|((EO&0x000000f00000)>>4);
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>20)|((CP&0x000f0000)>>12)|((CP&0x000000f0)<<12)|((CP&0x0000000f)<<20);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>20)|((CO&0x000f0000)>>12)|((CO&0x000000f0)<<12)|((CO&0x0000000f)<<20);
-        //  temp=CO3;
-        //  CO3=CO8;
-        //  CO8=temp;
-        //  temp=CO4;
-        //  CO4=CO7;
-        //  CO7=temp;
-    }
-    if (themove == "F'")
-    {
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>20)|((EP&0x0000000f0000)>>12)|((EP&0x000000f000f0)<<16); //10
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>20)|((EO&0x0000000f0000)>>12)|((EO&0x000000f000f0)<<16);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>4)|((CP&0x000f0000)>>16)|((CP&0x000000f0)<<16)|((CP&0x0000000f)<<4); //13
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>4)|((CO&0x000f0000)>>16)|((CO&0x000000f0)<<16)|((CO&0x0000000f)<<4);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //  temp=CO3;
-        //  CO3=CO7+1;
-        //  CO7=CO8+2;
-        //  CO8=CO4+1;
-        //  CO4=temp+2;
-    }
-    if (themove == "B")
-    {
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf000f0000000)>>16)|((EP&0x00000000f000)<<12)|((EP&0x00000f000000)<<20);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf000f0000000)>>16)|((EO&0x00000000f000)<<12)|((EO&0x00000f000000)<<20);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>16)|((CP&0x0f000000)<<4)|((CP&0x0000f000)>>4)|((CP&0x00000f00)<<16);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>16)|((CO&0x0f000000)<<4)|((CO&0x0000f000)>>4)|((CO&0x00000f00)<<16);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //   temp=CO1;
-        //  CO1=CO2+1;
-        //  CO2=CO6+2;
-        //  CO6=CO5+1;
-        //   CO5=temp+2;
-    }
-    if (themove == "B2")
-    {
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf00000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x00000f000000)<<4)|((EP&0x0000f0000000)>>4);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf00000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x00000f000000)<<4)|((EO&0x0000f0000000)>>4);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>20)|((CP&0x0f000000)>>12)|((CP&0x0000f000)<<12)|((CP&0x00000f00)<<20);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>20)|((CO&0x0f000000)>>12)|((CO&0x0000f000)<<12)|((CO&0x00000f00)<<20);
-        //   temp=CO1;
-        //   CO1=CO6;
-        //  CO6=temp;
-        //  temp=CO2;
-        //  CO2=CO5;
-        //  CO5=temp;
-
-    }
-    if (themove == "B'")
-    {
-        EP=(EP&0x0fff00ff0fff)|((EP&0x0000f000f000)<<16)|((EP&0xf00000000000)>>20)|((EP&0x00000f000000)>>12);
-        EO=(EO&0x0fff00ff0fff)|((EO&0x0000f000f000)<<16)|((EO&0xf00000000000)>>20)|((EO&0x00000f000000)>>12);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>4)|((CP&0x0f000000)>>16)|((CP&0x0000f000)<<16)|((CP&0x00000f00)<<4);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>4)|((CO&0x0f000000)>>16)|((CO&0x0000f000)<<16)|((CO&0x00000f00)<<4);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //   temp=CO1;
-        //   CO1=CO5+1;
-        //   CO5=CO6+2;
-        //   CO6=CO2+1;
-        // CO2=temp+2;
-    }
-    if (themove == "M")
-    {
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>8)|((EP&0x00f000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x0000000000f0)<<8);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>8)|((EO&0x00f000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x0000000000f0)<<8);
-
-        CN=(CN&0x0f0)|((((CN&0x00f)+2)%6+1)<<8)|((CN&0xf00)>>8);
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-    if (themove == "M2")
-    {
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>40)|((EP&0x00f000000000)>>24)|((EP&0x00000000f000)<<24)|((EP&0x0000000000f0)<<40);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>40)|((EO&0x00f000000000)>>24)|((EO&0x00000000f000)<<24)|((EO&0x0000000000f0)<<40);
-
-        CN=(CN&0x0f0)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((CN&0x00f)+2)%6+1);
-    }
-
-    if (themove == "M'")
-    {
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>32)|((EP&0x00f000000000)<<8)|((EP&0x00000000f000)>>8)|((EP&0x0000000000f0)<<32);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>32)|((EO&0x00f000000000)<<8)|((EO&0x00000000f000)>>8)|((EO&0x0000000000f0)<<32);
-
-        CN=(CN&0x0f0)|((((CN&0xf00)>>8)+2)%6+1)|((CN&0x00f)<<8);
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-    if (themove == "E")
-    {
-        EP=(EP&0xffff0000ffff)|((EP&0x00000fff0000)<<4)|((EP&0x0000f0000000)>>12);
-        EO=(EO&0xffff0000ffff)|((EO&0x00000fff0000)<<4)|((EO&0x0000f0000000)>>12);
-
-        CN=(CN&0xf00)|((((CN&0x0f0)>>4)+2)%6+1)|((CN&0x00f)<<4);
-
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-
-    if (themove == "E2")
-    {
-        EP=(EP&0xffff0000ffff)|((EP&0x000000ff0000)<<8)|((EP&0x0000ff000000)>>8);
-        EO=(EO&0xffff0000ffff)|((EO&0x000000ff0000)<<8)|((EO&0x0000ff000000)>>8);
-        CN=(CN&0xf00)|(((((CN&0x0f0)>>4)+2)%6+1)<<4)|(((CN&0x00f)+2)%6+1);
-    }
-
-
-    if (themove == "E'")
-    {
-        EP=(EP&0xffff0000ffff)|((EP&0x0000fff00000)>>4)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xffff0000ffff)|((EO&0x0000fff00000)>>4)|((EO&0x0000000f0000)<<12);
-
-        CN=(CN&0xf00)|((((CN&0x00f)+2)%6+1)<<4)|((CN&0x0f0)>>4);
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-
-
-    if (themove == "S")
-    {
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>32)|((EP&0x000f00000000)<<8)|((EP&0x000000000f00)>>8)|((EP&0x00000000000f)<<32);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>32)|((EO&0x000f00000000)<<8)|((EO&0x000000000f00)>>8)|((EO&0x00000000000f)<<32);
-        CN=(CN&0x00f)|(((((CN&0x0f0)>>4)+2)%6+1)<<8)|((CN&0xf00)>>4);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-        // 12 13 14=F
-        EO=EO^(0x101011111010);
-
-    }
-
-    if (themove == "S2")
-    {
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>40)|((EP&0x000f00000000)>>24)|((EP&0x000000000f00)<<24)|((EP&0x00000000000f)<<40);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>40)|((EO&0x000f00000000)>>24)|((EO&0x000000000f00)<<24)|((EO&0x00000000000f)<<40);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((((CN&0x0f0)>>4)+2)%6+1)<<4);
-
-    }
-
-    if (themove == "S'")
-    {
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>8)|((EP&0x000f00000000)>>32)|((EP&0x000000000f00)<<32)|((EP&0x00000000000f)<<8);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>8)|((EO&0x000f00000000)>>32)|((EO&0x000000000f00)<<32)|((EO&0x00000000000f)<<8);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<4)|((CN&0x0f0)<<4);
-        EO=EO^(0x101011111010);
-        /* slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-         shiftin= {40,32,8,0};
-         for (int i=0; i<slicemask.size(); i++)
-         {
-             if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-             {
-                 EO=EO^(0x111111111111&slicemask[i]);
-             }
-         }
-
-         slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-         shiftin= {44,36,28,24,20,16,12,4};
-         for (int i=0; i<slicemask.size(); i++)
-         {
-             if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-             {
-                 EO=EO^(0x111111111111&slicemask[i]);
-             }
-         }*/
-    }
-
-
-
-    if (themove == "x")
-    {
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f000f000000)>>16)|((EP&0x000000f00000)<<20)|((EP&0x000000000f00)<<12);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f000f000000)>>16)|((EO&0x000000f00000)<<20)|((EO&0x000000000f00)<<12);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>16)|((CP&0x00f00000)<<4)|((CP&0x00000f00)>>4)|((CP&0x000000f0)<<16);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>16)|((CO&0x00f00000)<<4)|((CO&0x00000f00)>>4)|((CO&0x000000f0)<<16);
-        CN=(CN&0x0f0)|((((CN&0xf00)>>8)+2)%6+1)|((CN&0x00f)<<8);
-
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            //if (o==24)
-            //  {
-            // cout<<std::hex<<CO<<endl<<(0xf<<o)<<endl<<(CO&(0xf<<o))<<endl<<((CO&(0xf<<o))>>(o+2))<<endl<<(!((CO&(0xf<<o))>>(o+2)))<<endl;
-            //     }
-
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>32)|((EP&0x00f000000000)<<8)|((EP&0x00000000f000)>>8)|((EP&0x0000000000f0)<<32);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>32)|((EO&0x00f000000000)<<8)|((EO&0x00000000f000)>>8)|((EO&0x0000000000f0)<<32);
-
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x0000000f000f)<<16)|((EP&0x0000f0000000)>>28)|((EP&0x000f00000000)>>4);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x0000000f000f)<<16)|((EO&0x0000f0000000)>>28)|((EO&0x000f00000000)>>4);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>16)|((CP&0x000f0000)<<12)|((CP&0x0000f000)>>12)|((CP&0x0000000f)<<16);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>16)|((CO&0x000f0000)<<12)|((CO&0x0000f000)>>12)|((CO&0x0000000f)<<16);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-    }
-
-
-    if (themove == "x2")
-    {
-
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>32)|((EP&0x000000f00000)<<4)|((EP&0x00000f000000)>>4)|((EP&0x000000000f00)<<32);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>32)|((EO&0x000000f00000)<<4)|((EO&0x00000f000000)>>4)|((EO&0x000000000f00)<<32);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>20)|((CP&0x00f00000)>>12)|((CP&0x00000f00)<<12)|((CP&0x000000f0)<<20);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>20)|((CO&0x00f00000)>>12)|((CO&0x00000f00)<<12)|((CO&0x000000f0)<<20);
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>40)|((EP&0x00f000000000)>>24)|((EP&0x00000000f000)<<24)|((EP&0x0000000000f0)<<40);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>40)|((EO&0x00f000000000)>>24)|((EO&0x00000000f000)<<24)|((EO&0x0000000000f0)<<40);
-        CN=(CN&0x0f0)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((CN&0x00f)+2)%6+1);
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f00000000)>>32)|((EP&0x0000f0000000)>>12)|((EP&0x00000000000f)<<32)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f00000000)>>32)|((EO&0x0000f0000000)>>12)|((EO&0x00000000000f)<<32)|((EO&0x0000000f0000)<<12);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>28)|((CP&0x000f0000)>>4)|((CP&0x0000f000)<<4)|((CP&0x0000000f)<<28);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>28)|((CO&0x000f0000)>>4)|((CO&0x0000f000)<<4)|((CO&0x0000000f)<<28);
-
-
-
-    }
-
-
-    if (themove == "x'")
-    {
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>20)|((EP&0x000000f00000)>>12)|((EP&0x00000f000000)<<16)|((EP&0x000000000f00)<<16);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>20)|((EO&0x000000f00000)>>12)|((EO&0x00000f000000)<<16)|((EO&0x000000000f00)<<16);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>4)|((CP&0x00f00000)>>16)|((CP&0x00000f00)<<16)|((CP&0x000000f0)<<4);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>4)|((CO&0x00f00000)>>16)|((CO&0x00000f00)<<16)|((CO&0x000000f0)<<4);
-        CN=(CN&0x0f0)|((((CN&0x00f)+2)%6+1)<<8)|((CN&0xf00)>>8);
-
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>8)|((EP&0x00f000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x0000000000f0)<<8);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>8)|((EO&0x00f000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x0000000000f0)<<8);
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f000f0000)>>16)|((EP&0x0000f0000000)<<4)|((EP&0x00000000000f)<<28);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f000f0000)>>16)|((EO&0x0000f0000000)<<4)|((EO&0x00000000000f)<<28);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>12)|((CP&0x000f0000)>>16)|((CP&0x0000f000)<<16)|((CP&0x0000000f)<<12);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>12)|((CO&0x000f0000)>>16)|((CO&0x0000f000)<<16)|((CO&0x0000000f)<<12);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-    }
-
-    if (themove == "y")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0xfff000000000)>>4)|((EP&0x000f00000000)<<12);
-        EO=(EO&0x0000ffffffff)|((EO&0xfff000000000)>>4)|((EO&0x000f00000000)<<12);
-        CP=(CP&0x0000ffff)|((CP&0xfff00000)>>4)|((CP&0x000f0000)<<12);
-        CO=(CO&0x0000ffff)|((CO&0xfff00000)>>4)|((CO&0x000f0000)<<12);
-        CN=(CN&0xf00)|((((CN&0x00f)+2)%6+1)<<4)|((CN&0x0f0)>>4);
-
-
-        EP=(EP&0xffff0000ffff)|((EP&0x0000fff00000)>>4)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xffff0000ffff)|((EO&0x0000fff00000)>>4)|((EO&0x0000000f0000)<<12);
-
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-        EP=(EP&0xffffffff0000)|((EP&0x00000000fff0)>>4)|((EP&0x00000000000f)<<12);
-        EO=(EO&0xffffffff0000)|((EO&0x00000000fff0)>>4)|((EO&0x00000000000f)<<12);
-        CP=(CP&0xffff0000)|((CP&0x0000fff0)>>4)|((CP&0x0000000f)<<12);
-        CO=(CO&0xffff0000)|((CO&0x0000fff0)>>4)|((CO&0x0000000f)<<12);
-    }
-
-
-    if (themove == "y2")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0xff0000000000)>>8)|((EP&0x00ff00000000)<<8);
-        EO=(EO&0x0000ffffffff)|((EO&0xff0000000000)>>8)|((EO&0x00ff00000000)<<8);
-        CP=(CP&0x0000ffff)|((CP&0xff000000)>>8)|((CP&0x00ff0000)<<8);
-        CO=(CO&0x0000ffff)|((CO&0xff000000)>>8)|((CO&0x00ff0000)<<8);
-
-        EP=(EP&0xffff0000ffff)|((EP&0x000000ff0000)<<8)|((EP&0x0000ff000000)>>8);
-        EO=(EO&0xffff0000ffff)|((EO&0x000000ff0000)<<8)|((EO&0x0000ff000000)>>8);
-        CN=(CN&0xf00)|(((((CN&0x0f0)>>4)+2)%6+1)<<4)|(((CN&0x00f)+2)%6+1);
-
-        EP=(EP&0xffffffff0000)|((EP&0x0000000000ff)<<8)|((EP&0x00000000ff00)>>8);
-        EO=(EO&0xffffffff0000)|((EO&0x0000000000ff)<<8)|((EO&0x00000000ff00)>>8);
-        CP=(CP&0xffff0000)|((CP&0x000000ff)<<8)|((CP&0x0000ff00)>>8);
-        CO=(CO&0xffff0000)|((CO&0x000000ff)<<8)|((CO&0x0000ff00)>>8);
-
-    }
-
-
-    if (themove == "y'")
-    {
-
-        EP=(EP&0x0000ffffffff)|((EP&0x0fff00000000)<<4)|((EP&0xf00000000000)>>12);
-        EO=(EO&0x0000ffffffff)|((EO&0x0fff00000000)<<4)|((EO&0xf00000000000)>>12);
-        CP=(CP&0x0000ffff)|((CP&0x0fff0000)<<4)|((CP&0xf0000000)>>12);
-        CO=(CO&0x0000ffff)|((CO&0x0fff0000)<<4)|((CO&0xf0000000)>>12);
-        CN=(CN&0xf00)|((((CN&0x0f0)>>4)+2)%6+1)|((CN&0x00f)<<4);
-
-        EP=(EP&0xffff0000ffff)|((EP&0x00000fff0000)<<4)|((EP&0x0000f0000000)>>12);
-        EO=(EO&0xffff0000ffff)|((EO&0x00000fff0000)<<4)|((EO&0x0000f0000000)>>12);
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-        EP=(EP&0xffffffff0000)|((EP&0x000000000fff)<<4)|((EP&0x00000000f000)>>12);
-        EO=(EO&0xffffffff0000)|((EO&0x000000000fff)<<4)|((EO&0x00000000f000)>>12);
-        CP=(CP&0xffff0000)|((CP&0x00000fff)<<4)|((CP&0x0000f000)>>12);
-        CO=(CO&0xffff0000)|((CO&0x00000fff)<<4)|((CO&0x0000f000)>>12);
-
-    }
-
-    if (themove == "z")
-    {
-
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000f00000)>>16)|((EP&0x0000000f0000)<<20)|((EP&0x0000000000f0)<<12);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000f00000)>>16)|((EO&0x0000000f0000)<<20)|((EO&0x0000000000f0)<<12);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>16)|((CP&0x000f0000)<<4)|((CP&0x000000f0)>>4)|((CP&0x0000000f)<<16);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>16)|((CO&0x000f0000)<<4)|((CO&0x000000f0)>>4)|((CO&0x0000000f)<<16);
-        CN=(CN&0x00f)|(((((CN&0x0f0)>>4)+2)%6+1)<<8)|((CN&0xf00)>>4);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>32)|((EP&0x000f00000000)<<8)|((EP&0x000000000f00)>>8)|((EP&0x00000000000f)<<32);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>32)|((EO&0x000f00000000)<<8)|((EO&0x000000000f00)>>8)|((EO&0x00000000000f)<<32);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-
-        EP=(EP&0x0fff00ff0fff)|((EP&0x0000f000f000)<<16)|((EP&0xf00000000000)>>20)|((EP&0x00000f000000)>>12);
-        EO=(EO&0x0fff00ff0fff)|((EO&0x0000f000f000)<<16)|((EO&0xf00000000000)>>20)|((EO&0x00000f000000)>>12);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>4)|((CP&0x0f000000)>>16)|((CP&0x0000f000)<<16)|((CP&0x00000f00)<<4);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>4)|((CO&0x0f000000)>>16)|((CO&0x0000f000)<<16)|((CO&0x00000f00)<<4);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-
-    }
-
-
-    if (themove == "z2")
-    {
-
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>32)|((EP&0x0000000f0000)<<4)|((EP&0x0000000000f0)<<32)|((EP&0x000000f00000)>>4);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>32)|((EO&0x0000000f0000)<<4)|((EO&0x0000000000f0)<<32)|((EO&0x000000f00000)>>4);
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>20)|((CP&0x000f0000)>>12)|((CP&0x000000f0)<<12)|((CP&0x0000000f)<<20);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>20)|((CO&0x000f0000)>>12)|((CO&0x000000f0)<<12)|((CO&0x0000000f)<<20);
-
-
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>40)|((EP&0x000f00000000)>>24)|((EP&0x000000000f00)<<24)|((EP&0x00000000000f)<<40);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>40)|((EO&0x000f00000000)>>24)|((EO&0x000000000f00)<<24)|((EO&0x00000000000f)<<40);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((((CN&0x0f0)>>4)+2)%6+1)<<4);
-
-
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf00000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x00000f000000)<<4)|((EP&0x0000f0000000)>>4);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf00000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x00000f000000)<<4)|((EO&0x0000f0000000)>>4);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>20)|((CP&0x0f000000)>>12)|((CP&0x0000f000)<<12)|((CP&0x00000f00)<<20);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>20)|((CO&0x0f000000)>>12)|((CO&0x0000f000)<<12)|((CO&0x00000f00)<<20);
-
-
-    }
-
-
-    if (themove == "z'")
-    {
-
-
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>20)|((EP&0x0000000f0000)>>12)|((EP&0x000000f000f0)<<16); //10
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>20)|((EO&0x0000000f0000)>>12)|((EO&0x000000f000f0)<<16);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>4)|((CP&0x000f0000)>>16)|((CP&0x000000f0)<<16)|((CP&0x0000000f)<<4); //13
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>4)|((CO&0x000f0000)>>16)|((CO&0x000000f0)<<16)|((CO&0x0000000f)<<4);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<4)|((CN&0x0f0)<<4);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>8)|((EP&0x000f00000000)>>32)|((EP&0x000000000f00)<<32)|((EP&0x00000000000f)<<8);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>8)|((EO&0x000f00000000)>>32)|((EO&0x000000000f00)<<32)|((EO&0x00000000000f)<<8);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf000f0000000)>>16)|((EP&0x00000000f000)<<12)|((EP&0x00000f000000)<<20);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf000f0000000)>>16)|((EO&0x00000000f000)<<12)|((EO&0x00000f000000)<<20);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>16)|((CP&0x0f000000)<<4)|((CP&0x0000f000)>>4)|((CP&0x00000f00)<<16);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>16)|((CO&0x0f000000)<<4)|((CO&0x0000f000)>>4)|((CO&0x00000f00)<<16);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-    }
-
-
-    if (themove == "r")
-    {
-
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f000f000000)>>16)|((EP&0x000000f00000)<<20)|((EP&0x000000000f00)<<12);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f000f000000)>>16)|((EO&0x000000f00000)<<20)|((EO&0x000000000f00)<<12);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>16)|((CP&0x00f00000)<<4)|((CP&0x00000f00)>>4)|((CP&0x000000f0)<<16);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>16)|((CO&0x00f00000)<<4)|((CO&0x00000f00)>>4)|((CO&0x000000f0)<<16);
-        CN=(CN&0x0f0)|((((CN&0xf00)>>8)+2)%6+1)|((CN&0x00f)<<8);
-
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            //if (o==24)
-            //  {
-            // cout<<std::hex<<CO<<endl<<(0xf<<o)<<endl<<(CO&(0xf<<o))<<endl<<((CO&(0xf<<o))>>(o+2))<<endl<<(!((CO&(0xf<<o))>>(o+2)))<<endl;
-            //     }
-
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>32)|((EP&0x00f000000000)<<8)|((EP&0x00000000f000)>>8)|((EP&0x0000000000f0)<<32);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>32)|((EO&0x00f000000000)<<8)|((EO&0x00000000f000)>>8)|((EO&0x0000000000f0)<<32);
-
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-
-    }
-
-
-    if (themove == "r2")
-    {
-
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>32)|((EP&0x000000f00000)<<4)|((EP&0x00000f000000)>>4)|((EP&0x000000000f00)<<32);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>32)|((EO&0x000000f00000)<<4)|((EO&0x00000f000000)>>4)|((EO&0x000000000f00)<<32);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>20)|((CP&0x00f00000)>>12)|((CP&0x00000f00)<<12)|((CP&0x000000f0)<<20);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>20)|((CO&0x00f00000)>>12)|((CO&0x00000f00)<<12)|((CO&0x000000f0)<<20);
-        CN=(CN&0x0f0)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((CN&0x00f)+2)%6+1);
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>40)|((EP&0x00f000000000)>>24)|((EP&0x00000000f000)<<24)|((EP&0x0000000000f0)<<40);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>40)|((EO&0x00f000000000)>>24)|((EO&0x00000000f000)<<24)|((EO&0x0000000000f0)<<40);
-
-
-    }
-
-
-    if (themove == "r'")
-    {
-        EP=(EP&0xf0fff00ff0ff)|((EP&0x0f0000000000)>>20)|((EP&0x000000f00000)>>12)|((EP&0x00000f000000)<<16)|((EP&0x000000000f00)<<16);
-        EO=(EO&0xf0fff00ff0ff)|((EO&0x0f0000000000)>>20)|((EO&0x000000f00000)>>12)|((EO&0x00000f000000)<<16)|((EO&0x000000000f00)<<16);
-        CP=(CP&0xf00ff00f)|((CP&0x0f000000)>>4)|((CP&0x00f00000)>>16)|((CP&0x00000f00)<<16)|((CP&0x000000f0)<<4);
-        CO=(CO&0xf00ff00f)|((CO&0x0f000000)>>4)|((CO&0x00f00000)>>16)|((CO&0x00000f00)<<16)|((CO&0x000000f0)<<4);
-        CN=(CN&0x0f0)|((((CN&0x00f)+2)%6+1)<<8)|((CN&0xf00)>>8);
-
-        CO+=0x01100110;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00100100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>8)|((EP&0x00f000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x0000000000f0)<<8);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>8)|((EO&0x00f000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x0000000000f0)<<8);
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-    }
-
-    if (themove == "l")
-    {
-
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>8)|((EP&0x00f000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x0000000000f0)<<8);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>8)|((EO&0x00f000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x0000000000f0)<<8);
-
-        CN=(CN&0x0f0)|((((CN&0x00f)+2)%6+1)<<8)|((CN&0xf00)>>8);
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f000f0000)>>16)|((EP&0x0000f0000000)<<4)|((EP&0x00000000000f)<<28);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f000f0000)>>16)|((EO&0x0000f0000000)<<4)|((EO&0x00000000000f)<<28);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>12)|((CP&0x000f0000)>>16)|((CP&0x0000f000)<<16)|((CP&0x0000000f)<<12);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>12)|((CO&0x000f0000)>>16)|((CO&0x0000f000)<<16)|((CO&0x0000000f)<<12);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //  temp=CO1;
-        //  CO1=CO5+2;
-        //  CO5=CO8+1;
-        //  CO8=CO4+2;
-        // CO4=temp+1;
-    }
-    if (themove == "l2")
-    {
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>40)|((EP&0x00f000000000)>>24)|((EP&0x00000000f000)<<24)|((EP&0x0000000000f0)<<40);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>40)|((EO&0x00f000000000)>>24)|((EO&0x00000000f000)<<24)|((EO&0x0000000000f0)<<40);
-
-        CN=(CN&0x0f0)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((CN&0x00f)+2)%6+1);
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x000f00000000)>>32)|((EP&0x0000f0000000)>>12)|((EP&0x00000000000f)<<32)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x000f00000000)>>32)|((EO&0x0000f0000000)>>12)|((EO&0x00000000000f)<<32)|((EO&0x0000000f0000)<<12);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>28)|((CP&0x000f0000)>>4)|((CP&0x0000f000)<<4)|((CP&0x0000000f)<<28);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>28)|((CO&0x000f0000)>>4)|((CO&0x0000f000)<<4)|((CO&0x0000000f)<<28);
-
-        //  temp=CO1;
-        //  CO1=CO8;
-        //  CO8=temp;
-        //  temp=CO4;
-        //  CO4=CO5;
-        //  CO5=temp;
-    }
-    if (themove == "l'")
-    {
-        EP=(EP&0x0f0fffff0f0f)|((EP&0xf00000000000)>>32)|((EP&0x00f000000000)<<8)|((EP&0x00000000f000)>>8)|((EP&0x0000000000f0)<<32);
-        EO=(EO&0x0f0fffff0f0f)|((EO&0xf00000000000)>>32)|((EO&0x00f000000000)<<8)|((EO&0x00000000f000)>>8)|((EO&0x0000000000f0)<<32);
-
-        CN=(CN&0x0f0)|((((CN&0xf00)>>8)+2)%6+1)|((CN&0x00f)<<8);
-
-        if (((CN&0x0f0)==0x020) || ((CN&0x0f0)==0x050))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0x0f0)==0x010) || ((CN&0x0f0)==0x040))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0x0f0)==0x030) || ((CN&0x0f0)==0x060))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0xf00000000000,0x00f000000000,0x00000000f000,0x0000000000f0};
-            shiftin= {44,36,12,4};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-            slicemask= {0x0f0000000000,0x000f00000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x000000000f00,0x00000000000f};
-            shiftin= {40,32,28,24,20,16,8,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-
-        EP=(EP&0xfff00ff0fff0)|((EP&0x0000000f000f)<<16)|((EP&0x0000f0000000)>>28)|((EP&0x000f00000000)>>4);
-        EO=(EO&0xfff00ff0fff0)|((EO&0x0000000f000f)<<16)|((EO&0x0000f0000000)>>28)|((EO&0x000f00000000)>>4);
-        CP=(CP&0x0ff00ff0)|((CP&0xf0000000)>>16)|((CP&0x000f0000)<<12)|((CP&0x0000f000)>>12)|((CP&0x0000000f)<<16);
-        CO=(CO&0x0ff00ff0)|((CO&0xf0000000)>>16)|((CO&0x000f0000)<<12)|((CO&0x0000f000)>>12)|((CO&0x0000000f)<<16);
-
-        CO+=0x10011001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x10000001;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        //  temp=CO1;
-        //  CO1=CO4+2;
-        //  CO4=CO8+1;
-        //  CO8=CO5+2;
-        //  CO5=temp+1;
-    }
-
-    if (themove == "u'")
-    {
-
-        EP=(EP&0x0000ffffffff)|((EP&0x0fff00000000)<<4)|((EP&0xf00000000000)>>12);
-        EO=(EO&0x0000ffffffff)|((EO&0x0fff00000000)<<4)|((EO&0xf00000000000)>>12);
-        CP=(CP&0x0000ffff)|((CP&0x0fff0000)<<4)|((CP&0xf0000000)>>12);
-        CO=(CO&0x0000ffff)|((CO&0x0fff0000)<<4)|((CO&0xf0000000)>>12);
-        EP=(EP&0xffff0000ffff)|((EP&0x00000fff0000)<<4)|((EP&0x0000f0000000)>>12);
-        EO=(EO&0xffff0000ffff)|((EO&0x00000fff0000)<<4)|((EO&0x0000f0000000)>>12);
-
-        CN=(CN&0xf00)|((((CN&0x0f0)>>4)+2)%6+1)|((CN&0x00f)<<4);
-
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-
-    if (themove == "u2")
-    {
-
-        EP=(EP&0x0000ffffffff)|((EP&0xff0000000000)>>8)|((EP&0x00ff00000000)<<8);
-        EO=(EO&0x0000ffffffff)|((EO&0xff0000000000)>>8)|((EO&0x00ff00000000)<<8);
-        CP=(CP&0x0000ffff)|((CP&0xff000000)>>8)|((CP&0x00ff0000)<<8);
-        CO=(CO&0x0000ffff)|((CO&0xff000000)>>8)|((CO&0x00ff0000)<<8);
-        EP=(EP&0xffff0000ffff)|((EP&0x000000ff0000)<<8)|((EP&0x0000ff000000)>>8);
-        EO=(EO&0xffff0000ffff)|((EO&0x000000ff0000)<<8)|((EO&0x0000ff000000)>>8);
-        CN=(CN&0xf00)|(((((CN&0x0f0)>>4)+2)%6+1)<<4)|(((CN&0x00f)+2)%6+1);
-    }
-
-
-    if (themove == "u")
-    {
-        EP=(EP&0x0000ffffffff)|((EP&0xfff000000000)>>4)|((EP&0x000f00000000)<<12);
-        EO=(EO&0x0000ffffffff)|((EO&0xfff000000000)>>4)|((EO&0x000f00000000)<<12);
-        CP=(CP&0x0000ffff)|((CP&0xfff00000)>>4)|((CP&0x000f0000)<<12);
-        CO=(CO&0x0000ffff)|((CO&0xfff00000)>>4)|((CO&0x000f0000)<<12);
-
-        EP=(EP&0xffff0000ffff)|((EP&0x0000fff00000)>>4)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xffff0000ffff)|((EO&0x0000fff00000)>>4)|((EO&0x0000000f0000)<<12);
-
-        CN=(CN&0xf00)|((((CN&0x00f)+2)%6+1)<<4)|((CN&0x0f0)>>4);
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-    if (themove == "d")
-    {
-        EP=(EP&0xffffffff0000)|((EP&0x000000000fff)<<4)|((EP&0x00000000f000)>>12);
-        EO=(EO&0xffffffff0000)|((EO&0x000000000fff)<<4)|((EO&0x00000000f000)>>12);
-        CP=(CP&0xffff0000)|((CP&0x00000fff)<<4)|((CP&0x0000f000)>>12);
-        CO=(CO&0xffff0000)|((CO&0x00000fff)<<4)|((CO&0x0000f000)>>12);
-        EP=(EP&0xffff0000ffff)|((EP&0x00000fff0000)<<4)|((EP&0x0000f0000000)>>12);
-        EO=(EO&0xffff0000ffff)|((EO&0x00000fff0000)<<4)|((EO&0x0000f0000000)>>12);
-
-        CN=(CN&0xf00)|((((CN&0x0f0)>>4)+2)%6+1)|((CN&0x00f)<<4);
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-
-    if (themove == "d2")
-    {
-
-        EP=(EP&0xffffffff0000)|((EP&0x0000000000ff)<<8)|((EP&0x00000000ff00)>>8);
-        EO=(EO&0xffffffff0000)|((EO&0x0000000000ff)<<8)|((EO&0x00000000ff00)>>8);
-        CP=(CP&0xffff0000)|((CP&0x000000ff)<<8)|((CP&0x0000ff00)>>8);
-        CO=(CO&0xffff0000)|((CO&0x000000ff)<<8)|((CO&0x0000ff00)>>8);
-        EP=(EP&0xffff0000ffff)|((EP&0x000000ff0000)<<8)|((EP&0x0000ff000000)>>8);
-        EO=(EO&0xffff0000ffff)|((EO&0x000000ff0000)<<8)|((EO&0x0000ff000000)>>8);
-        CN=(CN&0xf00)|(((((CN&0x0f0)>>4)+2)%6+1)<<4)|(((CN&0x00f)+2)%6+1);
-    }
-
-
-    if (themove == "d'")
-    {
-        EP=(EP&0xffffffff0000)|((EP&0x00000000fff0)>>4)|((EP&0x00000000000f)<<12);
-        EO=(EO&0xffffffff0000)|((EO&0x00000000fff0)>>4)|((EO&0x00000000000f)<<12);
-        CP=(CP&0xffff0000)|((CP&0x0000fff0)>>4)|((CP&0x0000000f)<<12);
-        CO=(CO&0xffff0000)|((CO&0x0000fff0)>>4)|((CO&0x0000000f)<<12);
-
-
-        EP=(EP&0xffff0000ffff)|((EP&0x0000fff00000)>>4)|((EP&0x0000000f0000)<<12);
-        EO=(EO&0xffff0000ffff)|((EO&0x0000fff00000)>>4)|((EO&0x0000000f0000)<<12);
-
-        CN=(CN&0xf00)|((((CN&0x00f)+2)%6+1)<<4)|((CN&0x0f0)>>4);
-
-        if (((CN&0xf00)==0x100) || ((CN&0xf00)==0x400))
-        {
-            slicers= {0x5,0x6,0x7,0x8};
-        }
-        else if (((CN&0xf00)==0x200) || ((CN&0xf00)==0x500))
-        {
-            slicers= {0x1,0x3,0x9,0xb};
-        }
-        else if (((CN&0xf00)==0x300) || ((CN&0xf00)==0x600))
-        {
-            slicers= {0x2,0x4,0xa,0xc};
-        }
-        else
-        {
-            slicers= {0x0};
-        }
-
-        if (slicers.size()>1)
-        {
-            slicemask= {0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000};
-            shiftin= {28,24,20,16};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])!=slicers[0]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[1]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[2]) & (((EP&slicemask[i])>>shiftin[i])!=slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-
-            slicemask= {0xf00000000000,0x0f0000000000,0x00f000000000,0x000f00000000,0x00000000f000,0x000000000f00,0x0000000000f0,0x00000000000f};
-            shiftin= {44,40,36,32,12,8,4,0};
-            for (int i=0; i<slicemask.size(); i++)
-            {
-                if ((((EP&slicemask[i])>>shiftin[i])==slicers[0]) | (((EP&slicemask[i])>>shiftin[i])==slicers[1]) | (((EP&slicemask[i])>>shiftin[i])==slicers[2]) | (((EP&slicemask[i])>>shiftin[i])==slicers[3]))
-                {
-                    EO=EO^(0x111111111111&slicemask[i]);
-                }
-            }
-        }
-    }
-
-    if (themove == "f")
-    {
-
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000f00000)>>16)|((EP&0x0000000f0000)<<20)|((EP&0x0000000000f0)<<12);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000f00000)>>16)|((EO&0x0000000f0000)<<20)|((EO&0x0000000000f0)<<12);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>16)|((CP&0x000f0000)<<4)|((CP&0x000000f0)>>4)|((CP&0x0000000f)<<16);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>16)|((CO&0x000f0000)<<4)|((CO&0x000000f0)>>4)|((CO&0x0000000f)<<16);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>32)|((EP&0x000f00000000)<<8)|((EP&0x000000000f00)>>8)|((EP&0x00000000000f)<<32);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>32)|((EO&0x000f00000000)<<8)|((EO&0x000000000f00)>>8)|((EO&0x00000000000f)<<32);
-        CN=(CN&0x00f)|(((((CN&0x0f0)>>4)+2)%6+1)<<8)|((CN&0xf00)>>4);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-    }
-
-    if (themove == "f2")
-    {
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>32)|((EP&0x0000000f0000)<<4)|((EP&0x0000000000f0)<<32)|((EP&0x000000f00000)>>4);
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>32)|((EO&0x0000000f0000)<<4)|((EO&0x0000000000f0)<<32)|((EO&0x000000f00000)>>4);
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>20)|((CP&0x000f0000)>>12)|((CP&0x000000f0)<<12)|((CP&0x0000000f)<<20);
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>20)|((CO&0x000f0000)>>12)|((CO&0x000000f0)<<12)|((CO&0x0000000f)<<20);
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>40)|((EP&0x000f00000000)>>24)|((EP&0x000000000f00)<<24)|((EP&0x00000000000f)<<40);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>40)|((EO&0x000f00000000)>>24)|((EO&0x000000000f00)<<24)|((EO&0x00000000000f)<<40);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((((CN&0x0f0)>>4)+2)%6+1)<<4);
-
-    }
-
-    if (themove == "f'")
-    {
-
-        EP=(EP&0xff0fff00ff0f)|((EP&0x00f000000000)>>20)|((EP&0x0000000f0000)>>12)|((EP&0x000000f000f0)<<16); //10
-        EO=(EO&0xff0fff00ff0f)|((EO&0x00f000000000)>>20)|((EO&0x0000000f0000)>>12)|((EO&0x000000f000f0)<<16);
-        EO=EO^0x001000110010; //1
-        CP=(CP&0xff00ff00)|((CP&0x00f00000)>>4)|((CP&0x000f0000)>>16)|((CP&0x000000f0)<<16)|((CP&0x0000000f)<<4); //13
-        CO=(CO&0xff00ff00)|((CO&0x00f00000)>>4)|((CO&0x000f0000)>>16)|((CO&0x000000f0)<<16)|((CO&0x0000000f)<<4);
-
-        CO+=0x00110011;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x00010010;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>8)|((EP&0x000f00000000)>>32)|((EP&0x000000000f00)<<32)|((EP&0x00000000000f)<<8);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>8)|((EO&0x000f00000000)>>32)|((EO&0x000000000f00)<<32)|((EO&0x00000000000f)<<8);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<4)|((CN&0x0f0)<<4);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-    }
-
-    if (themove == "b'")
-    {
-        EP=(EP&0x0fff00ff0fff)|((EP&0x0000f000f000)<<16)|((EP&0xf00000000000)>>20)|((EP&0x00000f000000)>>12);
-        EO=(EO&0x0fff00ff0fff)|((EO&0x0000f000f000)<<16)|((EO&0xf00000000000)>>20)|((EO&0x00000f000000)>>12);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>4)|((CP&0x0f000000)>>16)|((CP&0x0000f000)<<16)|((CP&0x00000f00)<<4);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>4)|((CO&0x0f000000)>>16)|((CO&0x0000f000)<<16)|((CO&0x00000f00)<<4);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>32)|((EP&0x000f00000000)<<8)|((EP&0x000000000f00)>>8)|((EP&0x00000000000f)<<32);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>32)|((EO&0x000f00000000)<<8)|((EO&0x000000000f00)>>8)|((EO&0x00000000000f)<<32);
-        CN=(CN&0x00f)|(((((CN&0x0f0)>>4)+2)%6+1)<<8)|((CN&0xf00)>>4);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-    }
-
-    if (themove == "b2")
-    {
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf00000000000)>>32)|((EP&0x00000000f000)<<32)|((EP&0x00000f000000)<<4)|((EP&0x0000f0000000)>>4);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf00000000000)>>32)|((EO&0x00000000f000)<<32)|((EO&0x00000f000000)<<4)|((EO&0x0000f0000000)>>4);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>20)|((CP&0x0f000000)>>12)|((CP&0x0000f000)<<12)|((CP&0x00000f00)<<20);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>20)|((CO&0x0f000000)>>12)|((CO&0x0000f000)<<12)|((CO&0x00000f00)<<20);
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>40)|((EP&0x000f00000000)>>24)|((EP&0x000000000f00)<<24)|((EP&0x00000000000f)<<40);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>40)|((EO&0x000f00000000)>>24)|((EO&0x000000000f00)<<24)|((EO&0x00000000000f)<<40);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<8)|(((((CN&0x0f0)>>4)+2)%6+1)<<4);
-
-    }
-
-    if (themove == "b")
-    {
-
-        EP=(EP&0x0fff00ff0fff)|((EP&0xf000f0000000)>>16)|((EP&0x00000000f000)<<12)|((EP&0x00000f000000)<<20);
-        EO=(EO&0x0fff00ff0fff)|((EO&0xf000f0000000)>>16)|((EO&0x00000000f000)<<12)|((EO&0x00000f000000)<<20);
-        CP=(CP&0x00ff00ff)|((CP&0xf0000000)>>16)|((CP&0x0f000000)<<4)|((CP&0x0000f000)>>4)|((CP&0x00000f00)<<16);
-        CO=(CO&0x00ff00ff)|((CO&0xf0000000)>>16)|((CO&0x0f000000)<<4)|((CO&0x0000f000)>>4)|((CO&0x00000f00)<<16);
-        EO=EO^0x100011001000;
-
-        CO+=0x11001100;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        CO+=0x01001000;
-        for (int o=28; o>=0; o=o-4)
-        {
-            if (!((CO&(0xf<<o))>>(o+2)))
-            {
-                CO&=~(0xf<<o);
-            }
-            else if (!((~((CO&(0x7<<o))>>o)&0x7)<<60))
-            {
-                CO&=~(0xb<<o);
-            }
-        }
-        EP=(EP&0xf0f0fffff0f0)|((EP&0x0f0000000000)>>8)|((EP&0x000f00000000)>>32)|((EP&0x000000000f00)<<32)|((EP&0x00000000000f)<<8);
-        EO=(EO&0xf0f0fffff0f0)|((EO&0x0f0000000000)>>8)|((EO&0x000f00000000)>>32)|((EO&0x000000000f00)<<32)|((EO&0x00000000000f)<<8);
-        CN=(CN&0x00f)|(((((CN&0xf00)>>8)+2)%6+1)<<4)|((CN&0x0f0)<<4);
-        EO=EO^(0x101011111010);
-
-        /*slicemask= {0x0f0000000000,0x000f00000000,0x000000000f00,0x00000000000f};
-        shiftin= {40,32,8,0};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])!=0x2) & (((EP&slicemask[i])>>shiftin[i])!=0x4) & (((EP&slicemask[i])>>shiftin[i])!=0xa) & (((EP&slicemask[i])>>shiftin[i])!=0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }
-
-        slicemask= {0xf00000000000,0x00f000000000,0x0000f0000000,0x00000f000000,0x000000f00000,0x0000000f0000,0x00000000f000,0x0000000000f0};
-        shiftin= {44,36,28,24,20,16,12,4};
-        for (int i=0; i<slicemask.size(); i++)
-        {
-            if ((((EP&slicemask[i])>>shiftin[i])==0x2) | (((EP&slicemask[i])>>shiftin[i])==0x4) | (((EP&slicemask[i])>>shiftin[i])==0xa) | (((EP&slicemask[i])>>shiftin[i])==0xc))
-            {
-                EO=EO^(0x111111111111&slicemask[i]);
-            }
-        }*/
-    }
-
-    return;
-}
-
-
 string y2rotator(string initial)
 {
     vector<string> words;
@@ -4229,11 +2152,13 @@ string solutionreducer(string initial, int step)
         words.push_back(tuf+" ");
     }
 
-    if ((customdets[step][8]==1)&&(words[words.size()-1][0]=='U'))
+    if (words.size()>0)
     {
-        words.pop_back();
+        if ((customdets[step][8]==1)&&(words[words.size()-1][0]=='U'))
+        {
+            words.pop_back();
+        }
     }
-
     for (int q=(words.size()-1); q>0; q--)
     {
         if ((words[q][0]=='U' && words[q-1][0]=='U') || (words[q][0]=='D' && words[q-1][0]=='D') || (words[q][0]=='R' && words[q-1][0]=='R') || (words[q][0]=='L' && words[q-1][0]=='L') || (words[q][0]=='F' && words[q-1][0]=='F') || (words[q][0]=='B' && words[q-1][0]=='B') || (words[q][0]=='M' && words[q-1][0]=='M') || (words[q][0]=='S' && words[q-1][0]=='S') || (words[q][0]=='E' && words[q-1][0]=='E') || (words[q][0]=='r' && words[q-1][0]=='r'))
@@ -4645,79 +2570,11 @@ EdgeMap mapp0;
 EdgeMap mapp1;
 EdgeMap mapp2;
 EdgeMap mapp3;
-EdgeMap mapp4; // reserved for alg sets in presets?
+EdgeMap mapp4; // reserved for alg sets in presets? nah boy
 EdgeMap mapp5;
 EdgeMap mapp6;
 EdgeMap mapp7;
 EdgeMap mapp8;
-
-
-
-// obsolete
-void testtuple(string thescramble) // OBSOLETE TEST FUNCTION DELETE LOL
-{
-
-    //       prunes1(5,1,1);
-
-    cout << "pruned"<<endl;
-
-    cubeRevert(0);
-    // Edge key (EPs, EOs, CPs);
-    // map[key] = "hi";
-
-    masks1(1,1);
-
-    EP=EPs&maskEPs1;
-    EO=EOs&maskEOs1;
-    CP=CPs&maskCPs1;
-    CO=COs&maskCOs1;
-    CN=CNs&maskCNs1;
-    showCube();
-    string buf;
-    stringstream ss(thescramble);
-    while (ss >> buf)
-    {
-        applyMove(buf);
-    }
-    EOfixer();
-    CNfixer();
-    showCube();
-    //cout<<mapp0.size();
-    Edge key (EP, EO, CP, CO, CN);
-
-
-    // cout<<moveReverse(mapp0[key])<<endl;
-
-}
-
-// obsolete
-void createmoves()
-{
-    moves.push_back(" U");
-    moves.push_back(" U2");
-    moves.push_back(" U'");
-    moves.push_back(" D");
-    moves.push_back(" D2");
-    moves.push_back(" D'");
-    moves.push_back(" R");
-    moves.push_back(" R2");
-    moves.push_back(" R'");
-    moves.push_back(" L");
-    moves.push_back(" L2");
-    moves.push_back(" L'");
-    moves.push_back(" F");
-    moves.push_back(" F2");
-    moves.push_back(" F'");
-    moves.push_back(" B");
-    moves.push_back(" B2");
-    moves.push_back(" B'");
-    moves.push_back(" M");
-    moves.push_back(" M2");
-    moves.push_back(" M'");
-    moves.push_back(" r");
-    moves.push_back(" r2");
-    moves.push_back(" r'");
-}
 
 void addLayers2(vector < char > curset, vector < vector < char > > &thisone, int allowedmoves)
 {
@@ -4915,7 +2772,7 @@ void addLayers2(vector < char > curset, vector < vector < char > > &thisone, int
 
         laxis=axis;
     }
-    for (int j=0; j<candimoves.size();j++)
+    for (int j=0; j<candimoves.size(); j++)
     {
         vector < char > tempset=curset;
         tempset.push_back(candimoves[j]);
@@ -5118,7 +2975,7 @@ void addLayersCustom(vector < char > curset, vector < vector < char > > &thisone
 
         laxis=axis;
     }
-    for (int j=0; j<candimoves.size();j++)
+    for (int j=0; j<candimoves.size(); j++)
     {
         vector < char > tempset=curset;
         tempset.push_back(candimoves[j]);
@@ -5126,417 +2983,30 @@ void addLayersCustom(vector < char > curset, vector < vector < char > > &thisone
     }
 }
 
-
-// obsolete
-void addLayers(string str, vector <string> &thisone, int allowedmoves, string touse)
-{
-    // allowedmoves: 1=6 gen, 2=6gen+Mr, 3=RUMr, 4=RUD, 5=RULD, 6=FURB, 7=MU, 8=U (algs), 9=MUD, 10=LUD;
-    string str1=str;
-    string dontadd;
-    int axis;
-    int caxisa;
-    string axis1;
-    string axis2;
-    string axis3;
-    bool hasdouble=0;
-    bool previousR=0;
-    bool previousL=0;
-    bool previousU=0;
-    bool previousF=0;
-    bool previousB=0;
-    bool previousm=0;
-    bool previousr=0;
-    bool previousD=0;
-    stringstream sstr(str1);
-    vector<string> vstr;
-    vector<int> caxis;
-    while(sstr >> str1)
-    {
-        vstr.push_back(str1);
-        if ((str1[0]=='U')||(str1[0]=='u')||(str1[0]=='D')||(str1[0]=='d')||(str1[0]=='E'))
-        {
-            caxis.push_back(1);
-        }
-        else if ((str1[0]=='R')||(str1[0]=='r')||(str1[0]=='L')||(str1[0]=='l')||(str1[0]=='M'))
-        {
-            caxis.push_back(2);
-        }
-        else if ((str1[0]=='F')||(str1[0]=='f')||(str1[0]=='B')||(str1[0]=='b')||(str1[0]=='S'))
-        {
-            caxis.push_back(3);
-        }
-        else if (str1[0]=='x')
-        {
-            caxis.push_back(4);
-        }
-        else if (str1[0]=='y')
-        {
-            caxis.push_back(5);
-        }
-        else if (str1[0]=='z')
-        {
-            caxis.push_back(6);
-        }
-
-    }
-
-    caxisa=caxis[caxis.size()-1];
-    int q=caxis.size()-1;
-
-    if (allowedmoves==99)
-    {
-        /*
-
-                for (int oo=0; oo<touse.length(); oo++)
-                {
-                if (touse[oo]=='U'||touse[oo]=='u'||touse[oo]=='D'||touse[oo]=='d'||touse[oo]=='E')
-                {
-                    axis1+=touse[oo];
-                }
-                else if (touse[oo]=='R'||touse[oo]=='r'||touse[oo]=='L'||touse[oo]=='l'||touse[oo]=='M')
-                {
-                    axis2+=touse[oo];
-                }
-                else if (touse[oo]=='F'||touse[oo]=='f'||touse[oo]=='B'||touse[oo]=='b'||touse[oo]=='S')
-                {
-                    axis3+=touse[oo];
-                }
-                }*/
-
-        while (caxisa==caxis[q])
-        {
-            dontadd+=vstr[q][0];
-            q--;
-        }
-
-        for (int qq=0; qq<dontadd.size(); qq++)
-        {
-            touse.erase(remove(touse.begin(),touse.end(), dontadd[qq]), touse.end());
-        }
-
-
-        for (int qqq=0; qqq<touse.size(); qqq++)
-        {
-            thisone.push_back(str+" "+touse[qqq]);
-            thisone.push_back(str+" "+touse[qqq]+"'");
-            thisone.push_back(str+" "+touse[qqq]+"2");
-        }
-
-
-        /*
-                for (int qqq=0; qqq<touse.size(); qqq++)
-                {
-                    thisone.push_back(str+" "+touse[qqq]);
-                    thisone.push_back(str+" "+touse[qqq]+"'");
-                    thisone.push_back(str+" "+touse[qqq]+"2");
-                }*/
-
-    }
-    else
-    {
-
-
-
-        if (vstr[vstr.size()-1][0]=='U')
-        {
-            axis=0;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='D')
-            {
-                hasdouble=1;
-                previousD=1;
-            }
-        }
-        if (vstr[vstr.size()-1][0]=='D')
-        {
-            axis=1;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='U')
-            {
-                hasdouble=1;
-                previousU=1;
-            }
-        }
-        if (vstr[vstr.size()-1][0]=='R')
-        {
-            axis=2;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='L')
-            {
-                hasdouble=1;
-                previousL=1;
-            }
-        }
-        if (vstr[vstr.size()-1][0]=='L')
-        {
-            axis=3;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='R')
-            {
-                hasdouble=1;
-                previousR=1;
-            }
-        }
-        if (vstr[vstr.size()-1][0]=='F')
-        {
-            axis=4;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='B')
-            {
-                hasdouble=1;
-                previousB=1;
-            }
-        }
-        if (vstr[vstr.size()-1][0]=='B')
-        {
-            axis=5;
-            if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='F')
-            {
-                hasdouble=1;
-                previousF=1;
-            }
-        }
-
-        if (allowedmoves==2 || allowedmoves==3)
-        {
-            if (vstr[vstr.size()-1][0]=='M')
-            {
-                axis=6; // whatever
-                if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='M')
-                {
-                    previousm=1;
-                }
-            }
-            if (vstr[vstr.size()-1][0]=='r')
-            {
-                axis=7; // whatever
-                if (vstr.size() >= 2 && vstr[vstr.size()-2][0]=='r')
-                {
-                    previousr=1;
-                }
-            }
-        }
-
-        if (allowedmoves==7)
-        {
-            if (vstr[vstr.size()-1][0]=='M')
-            {
-                axis=6; // whatever
-            }
-            else if (vstr[vstr.size()-1][0]=='U')
-            {
-                axis=0; // whatever
-            }
-        }
-
-        if (allowedmoves==1 || allowedmoves==2)
-        {
-
-            for (int j=0; j<18; j++)
-            {
-                if (j/3!=axis)
-                {
-                    if (!hasdouble || j/3!=(axis+1-2*(axis%2)))
-                    {
-                        thisone.push_back(str+moves[j]);
-
-                    }
-                }
-            }
-        }
-
-        if (allowedmoves==3 || allowedmoves==4 || allowedmoves==5 || allowedmoves==6) // RU
-        {
-            for (int j=0; j<3; j++)
-            {
-                if (j/3!=axis && !previousU)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-            for (int j=6; j<9; j++)
-            {
-                if (j/3!=axis && !previousR)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-        }
-
-        if (allowedmoves==6) // FB of RUFB
-        {
-            for (int j=12; j<15; j++)
-            {
-                if (j/3!=axis && !previousF)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-            for (int j=15; j<18; j++)
-            {
-                if (j/3!=axis && !previousB)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-        }
-
-
-        if (allowedmoves==7 || allowedmoves==9) // MU
-        {
-            for (int j=0; j<3; j++)
-            {
-                if (j/3!=axis)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-            for (int j=18; j<21; j++)
-            {
-                if (j/3!=axis)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-        }
-
-
-        if (allowedmoves==4 || allowedmoves==5 || allowedmoves==10 || allowedmoves==9)     // D
-        {
-            for (int j=3; j<6; j++)
-            {
-                if (j/3!=axis && !previousD)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-
-        }
-
-        if (allowedmoves==5 || allowedmoves==10)     // L
-        {
-            for (int j=9; j<12; j++)
-            {
-                if (j/3!=axis && !previousL)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-
-        }
-
-        if (allowedmoves==10)     // U
-        {
-            for (int j=0; j<3; j++)
-            {
-                if (j/3!=axis)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-        }
-
-
-        if (allowedmoves==2 || allowedmoves==3) // M r
-        {
-            for (int j=18; j<24; j++)
-            {
-                if (!previousm && j/3==6 && j/3!=axis)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-                if (!previousr && j/3==7 && j/3!=axis)
-                {
-                    thisone.push_back(str+moves[j]);
-                }
-            }
-        }
-
-    }
-
-}
-
- //obsolete
-void testlayers()
-{
-createmoves();
-                setups6gen.clear();
-                setups6gen.push_back(" ");
-                setups6gen.push_back("U");
-                setups6gen.push_back("U2");
-                setups6gen.push_back("U'");
-                setups6gen.push_back("D");
-                setups6gen.push_back("D2");
-                setups6gen.push_back("D'");
-                setups6gen.push_back("R");
-                setups6gen.push_back("R2");
-                setups6gen.push_back("R'");
-                setups6gen.push_back("L");
-                setups6gen.push_back("L2");
-                setups6gen.push_back("L'");
-                setups6gen.push_back("F");
-                setups6gen.push_back("F2");
-                setups6gen.push_back("F'");
-                setups6gen.push_back("B");
-                setups6gen.push_back("B2");
-                setups6gen.push_back("B'");
-                string movestouse="";
-                int startat=1;
-                        for (int ii=1; ii<5; ii++)
-                        {
-                            int endat=setups6gen.size();
-                            for (int i=startat; i<endat; i++)
-                            {
-                                addLayers(setups6gen[i], setups6gen, 1, movestouse);
-                            }
-                            startat=endat;
-                        }
-                cout<<setups6gen.size()<<" candidate solutions generated ";
-
-
-
-              /*  for (int i=0; i<setups6gen.size(); i++)
-                {
-                    std::cout<<"-"<<setups6gen[i];
-                    std::cout<<std::endl;
-                }
-*/
-
-}
-
-
 void EOfixer(void)
 {
-    // showCube();
     for (int o=44; o>=0; o=o-4)
     {
-        //cout<<std::hex<<EO<<endl<<(EO>>o)<<endl<<((EO>>o)&0x2)<<endl<<(!((EO>>o)&0x2))<<endl<<endl;
         if (!((EO>>o)&0x02))
         {
-            // cout<<"i'm in"<<endl<<(0xf<<o)<<endl<<~(0xf<<o)<<endl<<endl;
             EO&=~((__int64) (0xf)<<o);
         }
-        // getchar();
     }
-    // showCube();
 }
-void CNfixer(void)
-{
-    // showCube();
-    CN&=maskCNs1;
-    // showCube();
-}
-
 
 void cleanScrambler(void)
 {
     cubeRevert(0);
-    string buf;
     for (int i=0; i<wherretf.size(); i++)
     {
-        stringstream ss(wherretf[i][0]);
-        while (ss >> buf)
+        vector <char> tempmoves=move2vec(wherretf[i][0]);
+        for (int ij=0; ij<tempmoves.size(); ij++)
         {
-            applyMove(buf);
+            applyMove2(tempmoves[ij]);
         }
     }
     EOfixer();
-    CNfixer();
+    CN&=maskCNs1;
 }
 
 
@@ -5594,22 +3064,18 @@ void masks1(int method, int step)
 
              for (int k=0; k<pairs.size(); k++)
              {
-                         if (currentpair!=pairs[k])
-                         {
-                             maskEPs1&=~(0xf<<(12+pairs[k]*4));
-                             maskEOs1&=~(0xf<<(12+pairs[k]*4));
-                             maskCPs1&=~(0xf<<(pairs[k]*4-4));
-                             maskCOs1&=~(0xf<<(pairs[k]*4-4));
+                     if (currentpair!=pairs[k])
+                     {
+                         maskEPs1&=~(0xf<<(12+pairs[k]*4));
+                         maskEOs1&=~(0xf<<(12+pairs[k]*4));
+                         maskCPs1&=~(0xf<<(pairs[k]*4-4));
+                         maskCOs1&=~(0xf<<(pairs[k]*4-4));
 
-                            // maskCPs1&=~(0xf<<((k*4)-4));
-                           //  maskCOs1&=~(0xf<<((k*4)-4));
+                        // maskCPs1&=~(0xf<<((k*4)-4));
+                       //  maskCOs1&=~(0xf<<((k*4)-4));
 
-
-                         }
+                     }
              }
-
-             cout << std::dec << currentpair<< endl<<std::hex << maskEPs1 << endl<< maskCPs1;
-             getchar();
          }*/
 
 
@@ -5798,6 +3264,12 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
     setups6gen2.clear();
     setups6gen2.push_back({});
 
+
+    if (method==2 && step==4)
+    {
+        customdets[step][8]==1;
+    }
+
     if (allowedmoves==8)
     {
         isalgset=1;
@@ -5825,7 +3297,7 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
                 {
                     addLayersCustom(setups6gen2[i], setups6gen2, custommoveinset);
                 }
-               startat=endat;
+                startat=endat;
             }
         }
     }
@@ -5842,11 +3314,10 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
                 {
                     addLayers2(setups6gen2[i], setups6gen2, allowedmoves);
                 }
-               startat=endat;
+                startat=endat;
             }
         }
     }
-
     else if (isalgset)
     {
         addLayers2(setups6gen2[0], setups6gen2, allowedmoves);
@@ -5857,9 +3328,8 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
     }
 
 
-
     // switcheroo this too
-    vector < char > premoves={70};
+    vector < char > premoves= {70};
     if (customdets[step][8]==1) // if Udisplacements permitted
     {
         premoves.push_back(0);
@@ -5869,6 +3339,7 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
     for (int p=0; p<premoves.size(); p++)
     {
         for (int i=0; i<setups6gen2.size(); i++)
+        //for (int i=setups6gen2.size()-1; i>=0; i--)
         {
             cubeRevert(0);
             masks1(method, step);
@@ -5880,7 +3351,7 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
 
             applyMove2(premoves[p]); // change this (and above) to do new premoves
 
-            for (int m=0;m<setups6gen2[i].size();m++)
+            for (int m=0; m<setups6gen2[i].size(); m++)
             {
                 applyMove2(setups6gen2[i][m]);
             }
@@ -5938,367 +3409,7 @@ void prunes12 (int depth, int method, int step, int allowedmoves)
     cubeRevert(0);
 }
 
-void testmaps()
-{
-    prunes12(6, 1, 1, 1);
-    cubeRevert(0);
-    masks1(1,1);
-    EP=EPs&maskEPs1;
-    EO=EOs&maskEOs1;
-    CP=CPs&maskCPs1;
-    CO=COs&maskCOs1;
-    CN=CNs;
-    vector < char > applythese={12,2,14,5,0,9};
-    for (int i=1; i<applythese.size();i++)
-    {
-        applyMove2(applythese[i]);
-    }
-    CN=CN&maskCNs1;
-    EOfixer();
-    Edge key (EP, EO, CP, CO, CN);
-    int numfound=0;
-        if (mapp1.find(key) != mapp1.end())
-        {
-            pair <boost::unordered_multimap<Edge,vector < char >>::iterator,boost::unordered_multimap<Edge,vector < char > >::iterator> ret = mapp1.equal_range(key);
-            boost::unordered_multimap<Edge,vector < char >>::iterator it;
-            for (it=ret.first; it!=ret.second; ++it)
-            {
-                std::cout<<"\n";
-                vector < char > solfound=(*it).second;
-                std::cout<<vec2move(solfound);
-            }
-        }
-}
-
-void prunes1 (int depth, int method, int step, int allowedmoves)
-{
-    createmoves();
-    int blockID=1;
-    bool isalgset=0;
-    setups6gen.clear();
-    setups6gen.push_back(" ");
-    string movestouse="";
-
-    setups6gen2.clear();
-    setups6gen2.push_back({});
-
-
-
-    if (allowedmoves==1)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-        setups6gen.push_back("L");
-        setups6gen.push_back("L2");
-        setups6gen.push_back("L'");
-        setups6gen.push_back("F");
-        setups6gen.push_back("F2");
-        setups6gen.push_back("F'");
-        setups6gen.push_back("B");
-        setups6gen.push_back("B2");
-        setups6gen.push_back("B'");
-    }
-
-    if (allowedmoves==2)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-        setups6gen.push_back("L");
-        setups6gen.push_back("L2");
-        setups6gen.push_back("L'");
-        setups6gen.push_back("F");
-        setups6gen.push_back("F2");
-        setups6gen.push_back("F'");
-        setups6gen.push_back("B");
-        setups6gen.push_back("B2");
-        setups6gen.push_back("B'");
-        setups6gen.push_back("M");
-        setups6gen.push_back("M2");
-        setups6gen.push_back("M'");
-        setups6gen.push_back("r");
-        setups6gen.push_back("r2");
-        setups6gen.push_back("r'");
-    }
-
-    if (allowedmoves==3)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-        setups6gen.push_back("M");
-        setups6gen.push_back("M2");
-        setups6gen.push_back("M'");
-        setups6gen.push_back("r");
-        setups6gen.push_back("r2");
-        setups6gen.push_back("r'");
-    }
-
-    if (allowedmoves==4)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-    }
-
-    if (allowedmoves==5)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-        setups6gen.push_back("L");
-        setups6gen.push_back("L2");
-        setups6gen.push_back("L'");
-    }
-
-    if (allowedmoves==6)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("R");
-        setups6gen.push_back("R2");
-        setups6gen.push_back("R'");
-        setups6gen.push_back("F");
-        setups6gen.push_back("F2");
-        setups6gen.push_back("F'");
-        setups6gen.push_back("B");
-        setups6gen.push_back("B2");
-        setups6gen.push_back("B'");
-    }
-
-
-    if (allowedmoves==7)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("M");
-        setups6gen.push_back("M2");
-        setups6gen.push_back("M'");
-    }
-
-    if (allowedmoves==8)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        isalgset=1;
-    }
-    if (allowedmoves==9)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("M");
-        setups6gen.push_back("M2");
-        setups6gen.push_back("M'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-    }
-    if (allowedmoves==10)
-    {
-        setups6gen.push_back("U");
-        setups6gen.push_back("U2");
-        setups6gen.push_back("U'");
-        setups6gen.push_back("L");
-        setups6gen.push_back("L2");
-        setups6gen.push_back("L'");
-        setups6gen.push_back("D");
-        setups6gen.push_back("D2");
-        setups6gen.push_back("D'");
-    }
-
-    if (allowedmoves==99)
-    {
-        movestouse=custommg[step];
-        for (int qqq=0; qqq<movestouse.length(); qqq++)
-        {
-
-            setups6gen.push_back(string{movestouse[qqq]});
-            setups6gen.push_back(string{movestouse[qqq]}+"'");
-            setups6gen.push_back(string{movestouse[qqq]}+"2");
-        }
-
-        /*
-                for (int qqq=0; qqq<setups6gen.size(); qqq++)
-                {
-                    cout<<setups6gen[qqq]<<endl;
-                }
-
-                        setups6gen.push_back("U");
-                        setups6gen.push_back("U2");
-                        setups6gen.push_back("U'");
-                        setups6gen.push_back("L");
-                        setups6gen.push_back("L2");
-                        setups6gen.push_back("L'");
-                        setups6gen.push_back("D");
-                        setups6gen.push_back("D2");
-                        setups6gen.push_back("D'");*/
-    }
-
-
-    if (!isalgset)
-    {
-        if (depth>0)
-        {
-            int startat=1;
-            for (int ii=1; ii<depth; ii++)
-            {
-                int endat=setups6gen.size();
-                for (int i=startat; i<endat; i++)
-                {
-
-                    addLayers(setups6gen[i], setups6gen, allowedmoves, movestouse);
-
-                }
-
-//cout<<ii<<" "<<startat<<" "<<endat<<" "<<setupss1[startat]<<" "<<setupss1[endat]<<" "<<endl;
-                startat=endat;
-            }
-        }
-    }
-
-    else if (isalgset)
-    {
-        for (int i=0; i<4; i++)
-        {
-           // algparser(setups6gen[i], setups6gen, method);
-
-        }
-    }
-
-    /* if (step==5)
-     {
-         cout<<"Wein";
-          for (int ii=0; ii<setups6gen.size(); ii++)
-             {
-                 cout<<ii<<" : "<<setups6gen[ii]<<endl;
-                 getchar();
-             }
-     }*/
-
-//for (auto const& c : setupss1)
-//    std::cout << c << '\n';
-
-
-    //for (int i=setups6gen.size()-1; i>=0; i--) // UNCOMMENT THIS WHEN DONE !!!!!!
-
-    vector <string> premoves;
-    premoves.push_back("");
-
-    if (customdets[step][8]==1) // if Udisplacements permitted
-    {
-        premoves.push_back("U");
-        premoves.push_back("U2");
-        premoves.push_back("U'");
-    }
-
-    for (int p=0; p<premoves.size(); p++)
-    {
-
-        for (int i=0; i<setups6gen.size(); i++)
-        {
-            cubeRevert(0);
-            masks1(method, step);
-
-            EP=EPs&maskEPs1;
-            EO=EOs&maskEOs1;
-            CP=CPs&maskCPs1;
-            CO=COs&maskCOs1;
-            CN=CNs;
-
-            applyMove(premoves[p]);
-
-            string buf;
-            stringstream ss(setups6gen[i]);
-            while (ss >> buf)
-            {
-                applyMove(buf);
-
-            }
-
-            CN=CN&maskCNs1;
-
-            EOfixer();
-            //CNfixer();
-
-            Edge key (EP, EO, CP, CO, CN);// uncomment this
-
-         /*   if (step==0)
-            {
-                mapp0.insert(make_pair(key,setups6gen[i]));
-                // mapp0[key] = setups6gen[i];
-            }
-            if (step==1)
-            {
-                mapp1.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==2)
-            {
-                mapp2.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==3)
-            {
-                mapp3.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==4)
-            {
-                mapp4.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==5)
-            {
-                mapp5.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==6)
-            {
-                mapp6.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==7)
-            {
-                mapp7.insert(make_pair(key,setups6gen[i]));
-            }
-            if (step==8)
-            {
-                mapp8.insert(make_pair(key,setups6gen[i]));
-            }*/
-        }
-
-    }
-    cubeRevert(0);
-
-}
-
-bool iscpsolved(string soln , string k)
+bool iscpsolved(string soln, string k)
 {
     cubeRevert(0);
     string thescramble="";
@@ -6318,11 +3429,10 @@ bool iscpsolved(string soln , string k)
         }
     }
     thescramble+=soln;
-    string buf;
-    stringstream ss(thescramble);
-    while (ss >> buf)
+    vector <char> tempmoves=move2vec(thescramble);
+    for (int ij=0; ij<tempmoves.size(); ij++)
     {
-        applyMove(buf);
+        applyMove2(tempmoves[ij]);
     }
 
     if(find(cpdictionary.begin(), cpdictionary.end(), (CP&0xffff0ff0)) != cpdictionary.end())
@@ -6332,6 +3442,50 @@ bool iscpsolved(string soln , string k)
 
     return 0;
 }
+
+
+bool iscpsolvedanal(string soln, string k, bool isanal, int hm, vector < vector <__int64> > &statelist)
+{
+    cubeRevert(0);
+    string thescramble="";
+    if (stateset)
+    {
+        EP=EPi;
+        EO=EOi;
+        CP=CPi;
+        CO=COi;
+        CN=CNi;
+    }
+    else if (isanal)
+    {
+        EP=statelist[hm][0];
+        EO=statelist[hm][1];
+        CP=statelist[hm][2];
+        CO=statelist[hm][3];
+        CN=statelist[hm][4];
+    }
+    else
+    {
+        for (int i=0; i<wherretf.size(); i++)
+        {
+            thescramble+=wherretf[i][0]+" ";
+        }
+    }
+    thescramble+=soln;
+    vector <char> tempmoves=move2vec(thescramble);
+    for (int ij=0; ij<tempmoves.size(); ij++)
+    {
+        applyMove2(tempmoves[ij]);
+    }
+
+    if(find(cpdictionary.begin(), cpdictionary.end(), (CP&0xffff0ff0)) != cpdictionary.end())
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 
 bool checktables(EdgeMap &mapp, int i, int step, bool mirrorit, bool isfirst, int nom, vector < string > oris, vector < string > rots, int orr)
 {
@@ -6389,6 +3543,55 @@ bool checktables(EdgeMap &mapp, int i, int step, bool mirrorit, bool isfirst, in
 
 
 
+vector < char > analyzechecktables(EdgeMap &mapp, int i, int step, bool mirrorit, bool isfirst, int nom, vector < string > oris, vector < string > rots, int orr, int hm, vector <vector <__int64> > &statelist)
+{
+    Edge key (EP, EO, CP, CO, CN);
+    if (mapp.find(key) != mapp.end())
+    {
+        pair <boost::unordered_multimap<Edge, vector < char > >::iterator,boost::unordered_multimap<Edge, vector < char > >::iterator> ret = mapp.equal_range(key);
+        boost::unordered_multimap<Edge, vector < char > >::iterator it;
+        for (it=ret.first; it!=ret.second; ++it)
+        {
+            vector < char > solfound0=(*it).second;
+            string solfound = vec2move(solfound0);
+            if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(vec2move(solutionss12[i])+" "+moveReverse(solfound),step)) == solutionsList.end())
+            {
+                string soln=solutionreducer(vec2move(solutionss12[i])+" "+moveReverse(solfound),step);
+                if (mirrorit)
+                {
+                    soln=y2rotator(soln);
+                }
+                if (isfirst)
+                {
+                    if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolvedanal(moveReverse(rots[orr])+soln,rots[orr],1,hm,statelist)))
+                    {
+                        foundsolutions++;
+                        cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
+                    }
+                }
+                else
+                {
+                    if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolvedanal(soln, rots[orr],1,hm,statelist)))
+                    {
+                        foundsolutions++;
+                        cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
+                    }
+                }
+                if (foundsolutions==nom)
+                {
+                    return move2vec(soln);
+                }
+                else
+                {
+                    return {'g'};
+                }
+            }
+        }
+    }
+    return {'g'};
+}
+
+
 
 void solves12(int depth, int method, int step, int nom, vector < string > oris, vector < string > rots, int allowedmoves)
 {
@@ -6424,7 +3627,12 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
     {
         auto t1 = Clock::now();
         cubeRevert(0);
-        applyMove(trim(moveReverse(rots[orr])));
+        vector <char> tempmoves=move2vec(trim(moveReverse(rots[orr])));
+        for (int ij=0; ij<tempmoves.size(); ij++)
+        {
+            applyMove2(tempmoves[ij]);
+        }
+
         cpdictionary.clear();
         cpdictionary.push_back(CP&0xffff0ff0);
         if (customdets[step][9]==1)
@@ -6522,11 +3730,10 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
         if (customdets[step][15]) CN=CNs;
 
         //mask the unscrambled cube
-        string buf;
-        stringstream ss(thenewscramble);
-        while (ss >> buf)
+        tempmoves=move2vec(thenewscramble);
+        for (int ij=0; ij<tempmoves.size(); ij++)
         {
-            applyMove(buf);
+            applyMove2(tempmoves[ij]);
         }
 
         if (stateset)
@@ -6594,13 +3801,13 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
                     {
                         addLayersCustom(solutionss12[i], solutionss12, custommoveinset);
                     }
-                   startat=endat;
+                    startat=endat;
                 }
             }
         }
         else if (!isalgset)
         {
-        //insert hypermolding here
+            //insert hypermolding here
 
             if (depth>0)
             {
@@ -6612,7 +3819,7 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
                     {
                         addLayers2(solutionss12[i], solutionss12, allowedmoves);
                     }
-                   startat=endat;
+                    startat=endat;
                 }
             }
         }
@@ -6626,7 +3833,7 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
             CO=COb;
             CN=CNb;
 
-            for (int m=0;m<solutionss12[ee].size();m++)
+            for (int m=0; m<solutionss12[ee].size(); m++)
             {
                 applyMove2(solutionss12[ee][m]);
             }
@@ -6701,9 +3908,19 @@ void solves12(int depth, int method, int step, int nom, vector < string > oris, 
     cleanScrambler();
 }
 
+void printSquares(int n)
+{
+    cout.clear();
+    for (int i=0; i<n; i++)
+    {
+        cout<<"#";
+    }
+    cout.setstate(ios_base::failbit);
+}
 
 
-void solves1(int depth, int method, int step, int nom, vector < string > oris, vector < string > rots, int allowedmoves)
+
+vector < vector <__int64> > analyze12(int depth, int method, int step, int nom, vector < string > oris, vector < string > rots, int allowedmoves, vector < vector <__int64> > &statelist, bool firstdo)
 {
     solutionsLog.clear();
     rotationsLog.clear();
@@ -6713,14 +3930,15 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
     bool isalgset=0;
     mirrorit=0;
 
+    if ((method==2)&&(step==4)) //remove correctional AUF if it's LSE for roux method
+    {
+        customdets[step][8]=1;
+    }
 
 
     for (int i=0; i<wherretf.size(); i++)
     {
-        if (1)
-        {
-            thescramble=thescramble+wherretf[i][0]+" ";
-        }
+        thescramble=thescramble+wherretf[i][0]+" ";
     }
 
     if (!(usedrotation.empty()))
@@ -6733,9 +3951,13 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
     }
     for (int orr=0; orr<rots.size(); orr++)
     {
-
         cubeRevert(0);
-        applyMove(trim(moveReverse(rots[orr])));
+        vector <char> tempmoves=move2vec(trim(moveReverse(rots[orr])));
+        for (int ij=0; ij<tempmoves.size(); ij++)
+        {
+            applyMove2(tempmoves[ij]);
+        }
+
         cpdictionary.clear();
         cpdictionary.push_back(CP&0xffff0ff0);
         if (customdets[step][9]==1)
@@ -6749,47 +3971,45 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
                 {
                     if (startR)
                     {
-                        applyMove("U");
+                        applyMove2(0);
                     }
-                    if (!startR)
+                    else if (!startR)
                     {
-                        applyMove("R");
+                        applyMove2(6);
                     }
                 }
-                if (dire==1)
+                else if (dire==1)
                 {
                     if (startR)
                     {
-                        applyMove("U2");
+                        applyMove2(1);
                     }
-                    if (!startR)
+                    else if (!startR)
                     {
-                        applyMove("R2");
+                        applyMove2(7);
                     }
                 }
-                if (dire==2)
+                else if (dire==2)
                 {
                     if (startR)
                     {
-                        applyMove("U'");
+                        applyMove2(2);
                     }
-                    if (!startR)
+                    else if (!startR)
                     {
-                        applyMove("R'");
+                        applyMove2(8);
                     }
                 }
                 startR=!startR;
-
                 if(find(cpdictionary.begin(), cpdictionary.end(), (CP&0xffff0ff0)) == cpdictionary.end())
                 {
                     cpdictionary.push_back(CP&0xffff0ff0);
-                    //cout<<cpdictionary.size()<<"-"<<cpdictionary[cpdictionary.size()-1]<<endl;
                 }
             }
         }
 
 
-        bool nomore=0;
+        vector <char> nomore;
         string thenewscramble;
         solutionsList.clear();
         if (isfirst)
@@ -6799,24 +4019,6 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
         else
         {
             thenewscramble=rots[orr]+" "+thescramble+" ";
-        }
-
-//cout<<lbdone<<" "<<rbdone<<" "<<method<<" "<<step<<endl;
-        if (!lbdone && !rbdone && method==3 && step==3)
-        {
-            step=2;
-            mirrorit=1;
-            //cout<<"first block mirrored";
-            thenewscramble= "y2 " + thenewscramble + " y2";
-
-        }
-
-        if (!lbdone && rbdone && method==3 && step==2)
-        {
-            step=3;
-            //cout<<"second block mirrored";
-            mirrorit=1;
-            thenewscramble= "y2 " + thenewscramble + " y2";
         }
 
         cubeRevert(0);
@@ -6831,26 +4033,27 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
         CO=COs&maskCOs1;
         CN=CNs;
 
+        if (customdets[step][11]) EP=EPs;
+        if (customdets[step][12]) EO=EOs;
+        if (customdets[step][13]) CP=CPs;
+        if (customdets[step][14]) CO=COs;
+        if (customdets[step][15]) CN=CNs;
 
         //mask the unscrambled cube
-        string buf;
-        stringstream ss(thenewscramble);
-        while (ss >> buf)
+        tempmoves=move2vec(thenewscramble);
+        for (int ij=0; ij<tempmoves.size(); ij++)
         {
-            applyMove(buf);
+            applyMove2(tempmoves[ij]);
         }
 
         if (stateset)
         {
-            //          cubeRevert(0);
-
 
             if (oris[orr]!="UF")
             {
-                cout<<"\n   no alternate orientations on set states. set rotated state instead.\n\n";
-                return;
+                cout<<"\n   No alternate orientations on set states. Set rotated state instead.\n\n";
+                break;
             }
-
             else
             {
                 EP=EPi&hexparse(1,EPi,maskEPs1,rots[orr]);
@@ -6861,776 +4064,190 @@ void solves1(int depth, int method, int step, int nom, vector < string > oris, v
             }
         }
 
+        if (customdets[step][11]) EPs=customdets[step][11];
+        if (customdets[step][11]) EP=EP&hexparse(1,EP,maskEPs1,rots[orr]);
+        if (customdets[step][12]) EOs=customdets[step][12];
+        if (customdets[step][12]) EO=EO&hexparse(1,EP,maskEOs1,rots[orr]);
+        if (customdets[step][13]) CPs=customdets[step][13];
+        if (customdets[step][13]) CP=CP&hexparse(2,CP,maskCPs1,rots[orr]);
+        if (customdets[step][14]) COs=customdets[step][14];
+        if (customdets[step][14]) CO=CO&hexparse(2,CP,maskCOs1,rots[orr]);
+        if (customdets[step][15]) CNs=customdets[step][15];
+        if (customdets[step][15]) CN=CN&hexparse(3,CN,maskCNs1,rots[orr]);
 
-        //CN=CN&maskCNs1;
         EOfixer();
-        //CNfixer();
+
         EPb=EP;
         EOb=EO;
         CPb=CP;
         COb=CO;
         CNb=CN;
 
-        solutionss1.clear();
 
-        solutionss1.push_back(" ");
+        string movestouse=""; // can kill temporarily
+        solutionss12.clear();
+        solutionss12.push_back({});
 
-        if (allowedmoves==1)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-            solutionss1.push_back("L");
-            solutionss1.push_back("L2");
-            solutionss1.push_back("L'");
-            solutionss1.push_back("F");
-            solutionss1.push_back("F2");
-            solutionss1.push_back("F'");
-            solutionss1.push_back("B");
-            solutionss1.push_back("B2");
-            solutionss1.push_back("B'");
-        }
-
-        if (allowedmoves==2)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-            solutionss1.push_back("L");
-            solutionss1.push_back("L2");
-            solutionss1.push_back("L'");
-            solutionss1.push_back("F");
-            solutionss1.push_back("F2");
-            solutionss1.push_back("F'");
-            solutionss1.push_back("B");
-            solutionss1.push_back("B2");
-            solutionss1.push_back("B'");
-            solutionss1.push_back("M");
-            solutionss1.push_back("M2");
-            solutionss1.push_back("M'");
-            solutionss1.push_back("r");
-            solutionss1.push_back("r2");
-            solutionss1.push_back("r'");
-        }
-
-        if (allowedmoves==3)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-            solutionss1.push_back("M");
-            solutionss1.push_back("M2");
-            solutionss1.push_back("M'");
-            solutionss1.push_back("r");
-            solutionss1.push_back("r2");
-            solutionss1.push_back("r'");
-        }
-
-        if (allowedmoves==4)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-        }
-
-        if (allowedmoves==5)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-            solutionss1.push_back("L");
-            solutionss1.push_back("L2");
-            solutionss1.push_back("L'");
-        }
-
-        if (allowedmoves==6)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("R");
-            solutionss1.push_back("R2");
-            solutionss1.push_back("R'");
-            solutionss1.push_back("F");
-            solutionss1.push_back("F2");
-            solutionss1.push_back("F'");
-            solutionss1.push_back("B");
-            solutionss1.push_back("B2");
-            solutionss1.push_back("B'");
-        }
-
-        if (allowedmoves==7)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("M");
-            solutionss1.push_back("M2");
-            solutionss1.push_back("M'");
-        }
-        if (allowedmoves==8)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            nom=1;
-            isalgset=1;
-        }
-        if (allowedmoves==9)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("M");
-            solutionss1.push_back("M2");
-            solutionss1.push_back("M'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-        }
-        if (allowedmoves==10)
-        {
-            solutionss1.push_back("U");
-            solutionss1.push_back("U2");
-            solutionss1.push_back("U'");
-            solutionss1.push_back("L");
-            solutionss1.push_back("L2");
-            solutionss1.push_back("L'");
-            solutionss1.push_back("D");
-            solutionss1.push_back("D2");
-            solutionss1.push_back("D'");
-        }
 
         if (allowedmoves==99)
         {
-            string movestouse=custommg[step];
+            // create the custom move set vector here
+            movestouse=custommg[step];
+            string separated="";
             for (int qqq=0; qqq<movestouse.length(); qqq++)
             {
-
-                solutionss1.push_back(string{movestouse[qqq]});
-                solutionss1.push_back(string{movestouse[qqq]}+"'");
-                solutionss1.push_back(string{movestouse[qqq]}+"2");
+                separated+=string{movestouse[qqq]}+" "+string{movestouse[qqq]}+"2 "+string{movestouse[qqq]}+"' ";
             }
-        }
+            vector < char > custommoveinset=move2vec(separated);
 
-        if (!isalgset)
-        {
+            // actually make the table
             if (depth>0)
             {
-                int startat=1;
-                for (int ii=1; ii<depth; ii++)
+                int startat=0;
+                for (int ii=1; ii<=depth; ii++)
                 {
-                    int endat=solutionss1.size();
+                    int endat=solutionss12.size();
                     for (int i=startat; i<endat; i++)
                     {
-                        addLayers(solutionss1[i],solutionss1, allowedmoves, custommg[step]);
+                        addLayersCustom(solutionss12[i], solutionss12, custommoveinset);
                     }
-
                     startat=endat;
                 }
             }
         }
-        else if (isalgset)
+        else if (!isalgset)
         {
-            /* for (int i=0; i<4; i++)
-             {
-                 algparser(solutionss1[i],solutionss1, method);
-             }
-            */
+            //insert hypermolding here
+
+            if (depth>0)
+            {
+                int startat=0;
+                for (int ii=1; ii<=depth; ii++)
+                {
+                    int endat=solutionss12.size();
+                    for (int i=startat; i<endat; i++)
+                    {
+                        addLayers2(solutionss12[i], solutionss12, allowedmoves);
+                    }
+                    startat=endat;
+                }
+            }
         }
 
-
-        int foundsolutions=0;
-        for (int i=0; i<solutionss1.size(); i++)
+        for (int hm=0; hm<statelist.size(); hm++)
         {
-            EP=EPb;
-            EO=EOb;
-            CP=CPb;
-            CO=COb;
-            CN=CNb;
+            foundsolutions=0;
 
-            //   showCube();
-            //    getchar();
-
-            string buf;
-            stringstream ss(solutionss1[i]);
-            while (ss >> buf)
-            {
-                applyMove(buf);
-            }
-
-//check the prune table to see if that sequence puts you on it
-
-            CN=CN&maskCNs1;
-
-            EOfixer();
-            //CNfixer();
-
-            Edge key (EP, EO, CP, CO, CN);
-
-            /*if (step==0)
+            for (int ee=0; ee<solutionss12.size(); ee++)
             {
 
-                if (mapp0.find(key) != mapp0.end())
+            EP=statelist[hm][0]&hexparse(1,statelist[hm][0],maskEPs1,rots[orr]);
+            EO=statelist[hm][1]&hexparse(1,statelist[hm][0],maskEOs1,rots[orr]);
+            CP=statelist[hm][2]&hexparse(2,statelist[hm][2],maskCPs1,rots[orr]);
+            CO=statelist[hm][3]&hexparse(2,statelist[hm][2],maskCOs1,rots[orr]);
+            //CN=statelist[hm][4]&hexparse(3,statelist[hm][4],maskCNs1,rots[orr]);
+            CN=statelist[hm][4]&maskCNs1; // non me ne frega niente
+
+                for (int m=0; m<solutionss12[ee].size(); m++)
                 {
+                    applyMove2(solutionss12[ee][m]);
+                }
 
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp0.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
+                CN=CN&maskCNs1;
+                EOfixer();
 
-                        string solfound=(*it).second;
+                //check the prune table to see if that sequence puts you on it
+                //Edge key (EP, EO, CP, CO, CN);
 
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-
-                            if (isfirst)
-                            {
-
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-
-                        }
-                    }
+                if (step==0)
+                {
+                    nomore=analyzechecktables(mapp0,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==1)
+                {
+                    nomore=analyzechecktables(mapp1,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==2)
+                {
+                    nomore=analyzechecktables(mapp2,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==3)
+                {
+                    nomore=analyzechecktables(mapp3,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==4)
+                {
+                    nomore=analyzechecktables(mapp4,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==5)
+                {
+                    nomore=analyzechecktables(mapp5,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==6)
+                {
+                    nomore=analyzechecktables(mapp6,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==7)
+                {
+                    nomore=analyzechecktables(mapp7,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                else if (step==8)
+                {
+                    nomore=analyzechecktables(mapp8,ee,step,mirrorit,isfirst,nom,oris,rots,orr,hm,statelist);
+                }
+                if (nomore.size()==0)
+                {
+                    break;
+                }
+                if (nomore[0]!='g')
+                 {
+                     break;
+                 }
+            }
+            if (foundsolutions<nom)
+            {
+                cout.clear();
+                EP=statelist[hm][0];
+                EO=statelist[hm][1];
+                CP=statelist[hm][2];
+                CO=statelist[hm][3];
+                CN=statelist[hm][4];
+                showCube();
+                cout<<"\n   Fail thrown in step "<<step<<"+1. Insufficient depth likely.\n\n";
+                cout<<"   Press return to continue.\n\n";
+                getchar();
+                cout.setstate(ios_base::failbit);
+            }
+            statelist[hm][5]=countWords(vec2move(nomore));
+            EP=statelist[hm][0];
+            EO=statelist[hm][1];
+            CP=statelist[hm][2];
+            CO=statelist[hm][3];
+            CN=statelist[hm][4];
+            if (nomore.size()>0)
+            {
+                for (int mov=0; mov<nomore.size(); mov++)
+                {
+                    applyMove2(nomore[mov]);
                 }
             }
-
-            if (step==1)
-            {
-
-                if (mapp1.find(key) != mapp1.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp1.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-
-                            if (isfirst)
-                            {
-
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==2)
-            {
-
-                if (mapp2.find(key) != mapp2.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp2.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==3)
-            {
-
-                if (mapp3.find(key) != mapp3.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp3.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                    //cout<< solutionss1[i] <<" "<<countWords(solutionss1[i])<< " "<<solfound<<countWords(solfound)<<"\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==4)
-            {
-                if (mapp4.find(key) != mapp4.end())
-                {
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp4.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (method==2) //remove correctional AUF if it's roux method
-                        {
-                            customdets[step][8]=1;
-                        }
-
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==5)
-            {
-
-                if (mapp5.find(key) != mapp5.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp5.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-                        }
-                    }
-                }
-            }
-
-            if (step==6)
-            {
-
-                if (mapp6.find(key) != mapp6.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp6.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==7)
-            {
-
-                if (mapp7.find(key) != mapp7.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp7.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-                        }
-                    }
-                }
-            }
-
-
-            if (step==8)
-            {
-
-                if (mapp8.find(key) != mapp8.end())
-                {
-
-                    pair <boost::unordered_multimap<Edge,string>::iterator,boost::unordered_multimap<Edge,string>::iterator> ret = mapp8.equal_range(key);
-                    boost::unordered_multimap<Edge,string>::iterator it;
-                    for (it=ret.first; it!=ret.second; ++it)
-                    {
-
-                        string solfound=(*it).second;
-
-                        if (std::find(solutionsList.begin(), solutionsList.end(), solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step)) == solutionsList.end())
-                        {
-                            string soln=solutionreducer(solutionss1[i]+" "+moveReverse(solfound),step);
-                            if (mirrorit)
-                            {
-                                soln=y2rotator(soln);
-                            }
-
-                            if (isfirst)
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(moveReverse(rots[orr])+soln)))
-                                {
-                                    rotationsLog.push_back(moveReverse(rots[orr])+" ");
-                                    orientationsLog.push_back(oris[orr]);
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<<moveReverse(rots[orr])<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            else
-                            {
-                                if ((customdets[step][9]==0) || ((customdets[step][9]==1) && iscpsolved(soln)))
-                                {
-                                    solutionsLog.push_back(soln);
-                                    solutionsList.push_back(soln);
-                                    foundsolutions++;
-                                    cout<<"\n   " <<solutionsLog.size()<<".  "<< soln <<" ("<<std::dec<<countWords(soln)<<")\n";
-                                }
-                            }
-                            if (foundsolutions==nom)
-                            {
-                                nomore=1;
-                                break;   // make it so it doesnt do more than the lowest amount of moves
-                            }
-
-
-                        }
-                    }
-                }
-            }*/
-
-
-
-
-            if (nomore)
-            {
-                break;
-            }
-
-
+            statelist[hm][0]=EP;
+            statelist[hm][1]=EO;
+            statelist[hm][2]=CP;
+            statelist[hm][3]=CO;
+            statelist[hm][4]=CN;
+
+            printSquares(int(floor(12*(float(hm)+float(statelist.size()*nostep))/float(nosteps*statelist.size())))-squares);
+            squares=int(floor(12*(float(hm)+float(statelist.size()*nostep))/float(nosteps*statelist.size())));
         }
-        if (!foundsolutions)
-        {
-            cout<<"\n   no solutions found within search depth in prescribed movegroup\n";
-        }
-        else if (foundsolutions<nom)
-        {
-            cout<<"\n   only "<<foundsolutions<<" solution(s) found.\n";
-        }
-        cout<<endl;
-
     }
+    if (customdets[step][11]) EPs=0x123456789abc;
+    if (customdets[step][12]) EOs=0x222222222222;
+    if (customdets[step][13]) CPs=0x12345678;
+    if (customdets[step][14]) COs=0x44444444;
+    if (customdets[step][15]) CNs=0x123;
 
-    cleanScrambler();
+    return statelist;
 }
 
 void customparser(void)
@@ -7699,11 +4316,17 @@ void customparser(void)
                     }
                     if (ispd)
                     {
+                        stringstream todec;
+                        todec<<std::dec<<sss;
+                        todec>>x;
                         customdets[stepnumber][1]=x;
                         ispd=0;
                     }
                     if (issd)
                     {
+                        stringstream todec;
+                        todec<<std::dec<<sss;
+                        todec>>x;
                         customdets[stepnumber][2]=x;
                         issd=0;
                     }
@@ -7848,7 +4471,7 @@ void customparser(void)
             prunes12(customdets[stepgo][1],4,stepgo,customdets[stepgo][0]);
         }
     }
-auto t2 = Clock::now();
+    auto t2 = Clock::now();
     cout<<" in "<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms\n\n";
 }
 
@@ -7863,6 +4486,7 @@ bool executecommand(string comma, int nom, vector < string > oris, vector < stri
         {
             for (int i=0; i<customsteps.size(); i++)
             {
+
                 if (customall[j]==customsteps[i])
                 {
                     solves12(customdets[i][2],4,i,1,oris,rots,customdets[i][0]);
@@ -7887,4 +4511,297 @@ bool executecommand(string comma, int nom, vector < string > oris, vector < stri
         }
     }
     return 1;
+}
+
+
+bool isPossibleState(__int64 tEP, __int64 tCP)
+{
+    bool good=1;
+    for (int q=1; q<=12; q++)
+    {
+        if (q!=((tEP&(((__int64)0xf)<<(48-q*4)))>>(48-q*4)))
+        {
+            for (int w=q+1; w<=12; w++)
+            {
+                if (q==((tEP&(((__int64)0xf)<<(48-w*4)))>>(48-w*4)))
+                {
+                    tEP=tEP&(~(((__int64)0xf)<<(48-w*4)))|(((__int64)((tEP&(((__int64)0xf)<<(48-q*4)))>>(48-q*4)))<<(48-w*4));
+                    tEP=tEP&(~(((__int64)0xf)<<(48-q*4)))|(((__int64)q)<<(48-q*4));
+                    good=!good;
+                }
+            }
+        }
+    }
+    for (int q=1; q<=8; q++)
+    {
+        if (q!=((tCP&(((__int64)0xf)<<(32-q*4)))>>(32-q*4)))
+        {
+            for (int w=q+1; w<=8; w++)
+            {
+                if (q==((tCP&(((__int64)0xf)<<(32-w*4)))>>(32-w*4)))
+                {
+                    tCP=tCP&(~(((__int64)0xf)<<(32-w*4)))|(((__int64)((tCP&(((__int64)0xf)<<(32-q*4)))>>(32-q*4)))<<(32-w*4));
+                    tCP=tCP&(~(((__int64)0xf)<<(32-q*4)))|(((__int64)q)<<(32-q*4));
+                    good=!good;
+                }
+            }
+        }
+    }
+    return good;
+}
+
+
+vector <__int64> randomizer2()
+{
+    __int64 cEP=0;
+    __int64 cEO=0;
+    __int64 cCP=0;
+    __int64 cCO=0;
+    __int64 cCN=0;
+    vector <int> bco={4,6,5};
+    int tt=0;
+    int gg=0;
+    for (int i=0; i<11; i++)
+    {
+        tt=rand()%2;
+        gg+=tt;
+        cEO|=((__int64)(tt+2)<<(44-4*i));
+    }
+    cEO|=2+(gg%2);
+
+    gg=0;
+    for (int i=0; i<7; i++)
+    {
+        tt=rand()%3;
+        gg+=tt;
+        cCO|=((__int64)(tt+4)<<(28-4*i));
+    }
+    cCO|=bco[gg%3];
+
+    vector <int> candiE={0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb,0xc};
+    vector <int> candiC={0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8};
+    for (int i=0; i<12; i++)
+    {
+        tt=rand()%candiE.size();
+        gg=candiE[tt];
+        cEP|=((__int64)(gg)<<(44-4*i));
+        candiE.erase(std::remove(candiE.begin(), candiE.end(), gg), candiE.end());
+    }
+    for (int i=0; i<8; i++)
+    {
+        tt=rand()%candiC.size();
+        gg=candiC[tt];
+        cCP|=((__int64)(gg)<<(28-4*i));
+        candiC.erase(std::remove(candiC.begin(), candiC.end(), gg), candiC.end());
+    }
+
+    while(!isPossibleState(cEP,cCP))
+    {
+        candiE={0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0xa,0xb,0xc};
+        candiC={0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8};
+        cEP=0;
+        cCP=0;
+        for (int i=0; i<12; i++)
+        {
+            tt=rand()%candiE.size();
+            gg=candiE[tt];
+            cEP|=((__int64)(gg)<<(44-4*i));
+            candiE.erase(std::remove(candiE.begin(), candiE.end(), gg), candiE.end());
+        }
+        for (int i=0; i<8; i++)
+        {
+            tt=rand()%candiC.size();
+            gg=candiC[tt];
+            cCP|=((__int64)(gg)<<(28-4*i));
+            candiC.erase(std::remove(candiC.begin(), candiC.end(), gg), candiC.end());
+        }
+    }
+    cCN=0x123;
+    //std::cout<<std::hex<<cEO<<" "<<cCO<<" "<<cEP<<" "<<cCP<<" "<<cCN<<endl;
+    //std::cout<<isPossibleState(cEP,cCP)<<endl;
+    return {cEP, cEO, cCP, cCO, cCN};
+}
+
+
+
+
+void printStats(vector < vector < int > > statistics, vector < string > steps)
+{
+    int quantity=statistics.size();
+    float totalmax,totalmin,totalmean;
+    float allmin = 999;
+    float allmax = 0;
+    cout<<"\n\tSOLVES: "<<quantity;
+    for (int k=0; k<quantity; k++)
+    {
+        float acc = 0;
+        for (int o=0; o<steps.size(); o++)
+        {
+            acc+=float(statistics[k][o]);
+        }
+        if (acc>allmax)
+            allmax = acc;
+        if (acc<allmin)
+            allmin = acc;
+    }
+    cout<<"\n\n\tLEAST MOVES:\t"<<allmin<<"\n\tMOST MOVES:\t"<<allmax;
+
+    cout<<"\n\n\tSTEP\t\tMEAN\t\tBEST\t\tWORST";
+    for (int o=0; o<steps.size(); o++)
+    {
+        float acc = 0;
+        float maximum = 0;
+        float minimum = 999;
+        for (int k=0; k<quantity; k++)
+        {
+            acc+=float(statistics[k][o]);
+            //std::cout<<acc<<std::endl;
+            if (float(statistics[k][o])>maximum)
+                maximum = float(statistics[k][o]);
+            if (float(statistics[k][o])<minimum)
+                minimum = float(statistics[k][o]);
+        }
+        cout<<"\n\t"<<steps[o]<<"\t\t"<<acc/float(quantity)<<"\t\t"<<minimum<<"\t\t"<<maximum;
+        totalmax+=maximum;
+        totalmin+=minimum;
+        totalmean+=acc/float(quantity);
+    }
+    cout<<"\n\tTOTAL\t\t"<<totalmean<<"\t\t"<<totalmin<<"\t\t"<<totalmax<<"\n\n";
+}
+
+void savedata(vector < vector <__int64> > &states, vector < vector <int> > &stats, int stepnumber)
+{
+    for (int i=0; i<states.size(); i++)
+        {
+            stats[i][stepnumber]=states[i][5];
+        }
+    return;
+}
+
+
+void analyze(int quantity, int prunedmethod, vector < string > orientations, vector < string > rotations)
+{
+
+// put it in the default orientation only
+
+vector < vector <__int64> > statelist(quantity, vector <__int64> (6));
+
+    scramblesave.clear();
+    for (int i=0;i<quantity;i++)
+    {
+        cubeRevert(1);
+
+        vector <__int64> randos=randomizer2();
+
+        statelist[i][0]=randos[0];
+        statelist[i][1]=randos[1];
+        statelist[i][2]=randos[2];
+        statelist[i][3]=randos[3];
+        statelist[i][4]=randos[4];
+
+
+
+    }
+
+    if (prunedmethod==4)
+    {
+        auto t1 = Clock::now();
+        cout<<"\n\t|ANALYZING...|\n\t|";
+        vector < vector < int > > statistics(quantity, vector < int > (customall.size()));
+        vector < string > steps(customall.size());
+        squares=0;
+        nostep=0;
+        nosteps=customall.size();
+        cout.setstate(ios_base::failbit);
+        bool firstdo=1;
+        for (int ii=0; ii<customall.size(); ii++)
+        {
+            nostep=ii;
+            for (int i=0; i<customsteps.size(); i++)
+            {
+                if (customall[ii]==customsteps[i])
+                {
+                    statelist=analyze12(customdets[i][2],4,i,1,orientations,rotations,customdets[i][0],statelist,firstdo);
+                    savedata(statelist,statistics,nostep);
+                    firstdo=0;
+                    steps[ii]=customsteps[i];
+                }
+            }
+        }
+
+        cout.clear();
+        printSquares(12-squares);
+        cout.clear();
+        auto t2 = Clock::now();
+        cout<<"|\t"<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms"<<std::endl;;
+        printStats(statistics,steps);
+    }
+    else if (prunedmethod!=1&&prunedmethod!=2&&prunedmethod!=3)
+    {
+        cout<<"\n   must be pruned for petrus/roux/zz/custom\n\n";
+    }
+    else
+    {
+        auto t1 = Clock::now();
+        cout<<"\n\t|ANALYZING...|\n\t|";
+        vector < vector < int > > statistics(quantity, vector < int > (4));
+        vector < string > steps(4);
+        squares=0;
+        nostep=0;
+        nosteps=4;
+        cout.setstate(ios_base::failbit);
+        if (prunedmethod==1) // petrus
+        {
+            statelist=analyze12(6,1,1,1,orientations,rotations,1,statelist,1);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(5,1,2,1,orientations,rotations,6,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(7,1,3,1,orientations,rotations,4,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(1,1,4,1,orientations,rotations,8,statelist,0);
+            savedata(statelist,statistics,nostep);
+            steps = {"3x2x2","eo","f2l","zbll"};
+        }
+        if (prunedmethod==2) // roux
+        {
+            statelist=analyze12(5,2,0,1,orientations,rotations,2,statelist,1);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(7,2,1,1,orientations,rotations,3,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(1,2,4,1,orientations,rotations,8,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(10,2,5,1,orientations,rotations,7,statelist,0);
+            savedata(statelist,statistics,nostep);
+            steps = {"fb","sb","cmll","lse"};
+        }
+        if (prunedmethod==3) // zz
+        {
+            statelist=analyze12(5,3,0,1,orientations,rotations,1,statelist,1);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(6,3,2,1,orientations,rotations,5,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(7,3,3,1,orientations,rotations,4,statelist,0);
+            savedata(statelist,statistics,nostep);
+            nostep++;
+            statelist=analyze12(1,3,4,1,orientations,rotations,8,statelist,0);
+            savedata(statelist,statistics,nostep);
+            steps = {"eoline","lb","rb","zbll"};
+        }
+        cout.clear();
+
+    printSquares(12-squares);
+    cout.clear();
+    auto t2 = Clock::now();
+    cout<<"|\t"<<std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()<<" ms"<<std::endl;;
+    printStats(statistics,steps);
+    }
+
 }

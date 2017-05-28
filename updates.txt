@@ -1,3 +1,18 @@
+v0.9 (May-28-2017)
+ -upgraded method analysis: "analyze *"
+ -adjusted table depths in compiled methods
+ -removed 3000 lines of old code
+ -command line arguments (exe followed by usual commands, on one line)
+ -colored output
+ -switched to 64-bit
+ -fixed issues with ZBLL alg list
+ -fixed many bugs
+ 
+ 
+v0.8a (May-22-2017)
+ -"analyze *" to calculate stepwise method statistics
+
+ 
 v0.8 (Apr-14-2017)
  -massive code overhaul for significant performance improvement
  -custom solved states for user-defined methods (see readme)
